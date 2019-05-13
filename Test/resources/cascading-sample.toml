@@ -1,0 +1,46 @@
+﻿# This is a sample file that demonstrates cascading configuration. In this model the configuration is defined 
+# as a tree with the same node inheriting non specified values from parent.
+# This is demonstrated as a web server config file that hosts multiple sites
+
+
+# Default Section
+Host = "www.default-hosting.com"
+CopyRight = "ACME LTD."
+WebServerRoot = "/var/sites/default/www"
+Stack = "java"
+
+[[User]]
+Name = "root"
+Rights = ["read", "write", "create", "remove"]
+
+
+# Configuration for the first site.
+[[Site]]
+Host = "www.myproject.com"
+WebServerRoot = "/var/sites/myproject/www"
+Stack = "php"
+    
+    [[Site.User]]
+    Name = "root"
+    Rights = ["read", "write", "create", "remove"]
+    
+    [[Site.User]]
+        Name = "john"
+        Rights = ["read", "write"]
+
+
+# Configuration for the second site.
+[[Site]]
+Host = "www.second-project.com"
+WebServerRoot = "/var/sites/second-project/www"
+Stack = "haskell"
+
+        
+    [[Site.User]]
+    Name = "root"
+    Rights = ["read", "write", "create", "remove"]
+    
+    [[Site.User]]
+        Name = "jess"
+        Rights = ["read", "write", "remove"]
+

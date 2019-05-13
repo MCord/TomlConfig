@@ -1,0 +1,8 @@
+﻿namespace generated
+{
+    public class Class42 : CompilerTest.Test 
+    {
+        public CompilerTest.Test[] Site { get; set; }
+        public CompilerTest.Test[] User { get; set; }
+    }
+}
