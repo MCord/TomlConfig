@@ -11,12 +11,17 @@ namespace Test
     {
         public class Config
         {
-            
         }
 
         private string RemoveWhiteSpace(string value)
         {
             return Regex.Replace(value, @"\s+", string.Empty);
+        }
+
+        private static void VerifyPropertyType(Type type, string propName, Type propType)
+        {
+            var prop = type.GetProperty(propName);
+            prop.PropertyType.IsSameOrInherits(propType);
         }
 
         [Fact]
@@ -27,18 +32,12 @@ namespace Test
             VerifyPropertyType(type, "Site", typeof(Config[]));
         }
 
-        private static void VerifyPropertyType(Type type, string propName, Type propType)
-        {
-            var prop = type.GetProperty(propName);
-            prop.PropertyType.IsSameOrInherits(propType);
-        }
-
         [Fact]
         public void ShouldCompileCodeForContainerWithMultipleDimensions()
         {
             var compiler = new Compiler();
             var type = compiler.CompileContainer(typeof(Config), new[] {"Site", "User"});
-            
+
             VerifyPropertyType(type, "Site", typeof(Config[]));
             VerifyPropertyType(type, "User", typeof(Config[]));
         }

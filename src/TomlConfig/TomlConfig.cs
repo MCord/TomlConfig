@@ -11,7 +11,26 @@
     public class TomlConfig
     {
         /// <summary>
-        /// Reads an stream containing a toml file and returns an object of type T
+        ///     This delegate is called when the object is hydrated.
+        ///     <param>The first param is the object after values are set.</param>
+        ///     <param>the second param is the source toml table.</param>
+        /// </summary>
+        public Action<object, TomlTable> OnTableParsingFinished;
+
+        /// <summary>
+        ///     This delegate is called when before a new object is hydrated.
+        ///     <param>First argument is the instance being hydrated.</param>
+        ///     <param>Second argument is the toml table containing data to be mapped to object.</param>
+        ///     <param>Third object is the default object that would provide missing value when needed.</param>
+        ///     <returns>
+        ///         An instance of object that will be used as default, should have the same type as the instance being
+        ///         hydrated.
+        ///     </returns>
+        /// </summary>
+        public Func<object, TomlTable, object, object> OnTableParsingStarted;
+
+        /// <summary>
+        ///     Reads an stream containing a toml file and returns an object of type T
         /// </summary>
         /// <param name="data">The stream containing toml</param>
         /// <typeparam name="T">The type to be deserialized.</typeparam>
@@ -22,41 +41,29 @@
         }
 
         /// <summary>
-        /// Reads an stream containing a toml file and returns an object.
+        ///     Reads an stream containing a toml file and returns an object.
         /// </summary>
         /// <param name="t">object Type to be deserialized</param>
         /// <param name="data">The stream containing toml</param>
         /// <returns>An object deserialized from file content.</returns>
         public static object Read(Type t, Stream data)
         {
-            TomlConfig tc = new TomlConfig();
+            var tc = new TomlConfig();
             var tomlTable = Toml.Parse(new StreamReader(data).ReadToEnd());
             return tc.ConvertTable(t, tomlTable.ToModel());
         }
 
         /// <summary>
-        /// This delegate is called when before a new object is hydrated.
-        /// <param >First argument is the instance being hydrated.</param>
-        /// <param >Second argument is the toml table containing data to be mapped to object.</param>
-        /// <param >Third object is the default object that would provide missing value when needed.</param>
-        /// <returns>An instance of object that will be used as default, should have the same type as the instance being hydrated.</returns>
-        /// </summary>
-        public Func<object, TomlTable, object, object> OnTableParsingStarted;
-        /// <summary>
-        /// This delegate is called when the object is hydrated.
-        /// <param>The first param is the object after values are set.</param>
-        /// <param>the second param is the source toml table.</param>
-        /// </summary>
-        public Action<object, TomlTable> OnTableParsingFinished;
-
-        /// <summary>
-        /// This function can deserialize an object using default value from another object.
+        ///     This function can deserialize an object using default value from another object.
         /// </summary>
         /// <param name="type">The type of class to be deserialized.</param>
         /// <param name="data">The stream containing toml data.</param>
         /// <param name="default">An instance with the same type as the object being deserialized.</param>
         /// <returns>A deserialized object</returns>
-        /// <remarks>If a property for the instance is not specified in the stream, the value from the default instance will be set on the object.</remarks>
+        /// <remarks>
+        ///     If a property for the instance is not specified in the stream, the value from the default instance will be set
+        ///     on the object.
+        /// </remarks>
         public object ReadWithDefault(Type type, Stream data, object @default = default)
         {
             var tomlTable = Toml.Parse(new StreamReader(data).ReadToEnd());
@@ -64,13 +71,16 @@
         }
 
         /// <summary>
-        /// This function can deserialize an object using default value from another object.
+        ///     This function can deserialize an object using default value from another object.
         /// </summary>
         /// <param name="data">The stream containing toml data.</param>
         /// <param name="default">An instance with the same type as the object being deserialized.</param>
         /// <typeparam name="T">The type of the object to be deserialized.</typeparam>
         /// <returns>A deserialized object</returns>
-        /// <remarks>If a property for the instance is not specified in the stream, the value from the default instance will be set on the object.</remarks>
+        /// <remarks>
+        ///     If a property for the instance is not specified in the stream, the value from the default instance will be set
+        ///     on the object.
+        /// </remarks>
         public static T ReadWithDefault<T>(Stream data, T @default = default)
         {
             var tc = new TomlConfig();
@@ -104,7 +114,7 @@
                 {
                     throw new TomlConfigurationException(
                         $"Unable to convert value '{tomlTable[key]}' to type {match.PropertyType} from key {key}"
-                        ,ex);
+                        , ex);
                 }
             }
 
@@ -143,10 +153,10 @@
 
             if (elementType == null)
             {
-                var @join = string.Join(",",items.Select(x=>x.ToString()));
-                
-                throw new TomlConfigurationException($"array value [{@join}] can not be cast to type {targetType}" +
-                                                     $" because it's not an array.");
+                var join = string.Join(",", items.Select(x => x.ToString()));
+
+                throw new TomlConfigurationException($"array value [{join}] can not be cast to type {targetType}" +
+                                                     " because it's not an array.");
             }
 
             var converted = items

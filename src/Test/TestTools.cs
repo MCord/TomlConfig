@@ -13,6 +13,7 @@ namespace Test
                 CompareDateTimeOffsetWithOffsets = true
             }
         };
+
         public static void AssertEqual<T>(T excpected, T first)
         {
             var compare = Logic.Compare(first, excpected);
@@ -22,6 +23,7 @@ namespace Test
                 throw new Exception(compare.DifferencesString);
             }
         }
+
         public static bool TestEqual<T>(T excpected, T first)
         {
             var compare = Logic.Compare(first, excpected);

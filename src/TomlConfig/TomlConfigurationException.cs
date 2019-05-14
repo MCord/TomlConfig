@@ -2,7 +2,7 @@ namespace TomlConfig
 {
     using System;
 
-    public class TomlConfigurationException : System.Exception
+    public class TomlConfigurationException : Exception
     {
         public TomlConfigurationException(string message) : base(message)
         {

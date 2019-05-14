@@ -10,19 +10,36 @@ namespace Test
         [UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
         public class SampleConfig
         {
-            [CascadeDimension(0, "Site")]
-            public string Host { get; set; }
+            [CascadeDimension(0, "Site")] public string Host { get; set; }
+
             public string CopyRight { get; set; }
             public string WebServerRoot { get; set; }
             public string Stack { get; set; }
             public UserConfig[] User { get; set; }
-            
+
             [UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
             public class UserConfig
             {
                 public string Name { get; set; }
                 public string[] Rights { get; set; }
             }
+        }
+
+        public class SampleConfigWithTowLevelDimension
+        {
+            [CascadeDimension(0, "SubDomain")] public string Host { get; set; }
+
+            [CascadeDimension(0, "Paths")] public string Path { get; set; }
+
+            public string FileType { get; set; }
+        }
+
+        [Fact]
+        public void ShouldInheritNonSpecifiedValuesFromParent()
+        {
+            var subject = new CascadingConfig<SampleConfig>(Resources.Load("cascading-sample.toml"));
+            Check.That(subject.GetConfigAtLevel("www.myproject.com").CopyRight)
+                .IsEqualTo("ACME LTD.");
         }
 
         [Fact]
@@ -57,25 +74,6 @@ namespace Test
             Check.That(site2.User[0].Rights).IsEquivalentTo("read", "write", "create", "remove");
             Check.That(site2.User[1].Name).IsEqualTo("jess");
             Check.That(site2.User[1].Rights).IsEquivalentTo("read", "write", "remove");
-
-        }
-
-        [Fact]
-        public void ShouldInheritNonSpecifiedValuesFromParent()
-        {
-            var subject = new CascadingConfig<SampleConfig>(Resources.Load("cascading-sample.toml"));
-            Check.That(subject.GetConfigAtLevel("www.myproject.com").CopyRight)
-                .IsEqualTo("ACME LTD.");
-
-        }
-        
-        public class SampleConfigWithTowLevelDimension
-        {
-            [CascadeDimension(0, "SubDomain")]
-            public string Host { get; set; }
-            [CascadeDimension(0, "Paths")]
-            public string Path { get; set; }
-            public string FileType { get; set; }
         }
 
         [Fact]
@@ -89,7 +87,5 @@ namespace Test
             Check.That(root.Path).IsEqualTo("/");
             Check.That(root.FileType).IsEqualTo("html");
         }
-
-
     }
 }

@@ -13,19 +13,19 @@ namespace TomlConfig
     public class CascadingConfig<T> where T : class
     {
         private readonly Dictionary<string, T> mappings;
-        
+
         public CascadingConfig(Stream data)
         {
             var compiler = new Compiler();
 
             var dimensions = GetDimensions();
-            var dimensionNames = dimensions.Select(x=>x.Name).ToArray();
+            var dimensionNames = dimensions.Select(x => x.Name).ToArray();
 
             var containerType = compiler.CompileContainer(typeof(T), dimensionNames);
-            
+
             var tc = new TomlConfig();
             var stack = new Stack<T>();
-            
+
             tc.OnTableParsingStarted += (i, table, @default) =>
             {
                 var t = i as T;
@@ -36,10 +36,10 @@ namespace TomlConfig
 
 
                 var newDefault = stack.Count > 0 ? stack.Peek() : @default;
-                
+
                 stack.Push(t);
-                
-                return newDefault ;
+
+                return newDefault;
             };
 
             tc.OnTableParsingFinished += (o, table) =>
@@ -47,7 +47,7 @@ namespace TomlConfig
                 var t = o as T;
                 if (t == null)
                 {
-                    return ;
+                    return;
                 }
 
                 stack.Pop();
@@ -57,22 +57,23 @@ namespace TomlConfig
             mappings = ReadMappingsFromInstance(instance, dimensions);
         }
 
-        private Dictionary<string,T> ReadMappingsFromInstance(T instance, CascadeDimensionAttribute[] dimensions)
+        private Dictionary<string, T> ReadMappingsFromInstance(T instance, CascadeDimensionAttribute[] dimensions)
         {
             var result = new Dictionary<string, T> {{"", instance}};
 
             var ancestry = new Stack<T>();
             ancestry.Push(instance);
             AddDimension(result, ancestry, dimensions[0], dimensions.Skip(1).ToArray(), string.Empty);
-            
+
             return result;
         }
 
-        private void AddDimension(Dictionary<string,T> result, Stack<T> ancestry, 
-            CascadeDimensionAttribute currentDimension, 
+        private void AddDimension(Dictionary<string, T> result, Stack<T> ancestry,
+            CascadeDimensionAttribute currentDimension,
             CascadeDimensionAttribute[] remaining, string path)
         {
-            var valueArray = (T[]) ancestry.Peek().GetType().GetProperty(currentDimension.Name)?.GetValue(ancestry.Peek());
+            var valueArray = (T[]) ancestry.Peek().GetType().GetProperty(currentDimension.Name)
+                ?.GetValue(ancestry.Peek());
 
             if (valueArray == null || valueArray.Length == 0)
             {
@@ -97,7 +98,7 @@ namespace TomlConfig
 
         private static string GetSubPath(string path, object separator)
         {
-            return string.Join("/", new[] {path, separator.ToString()}.Where(x=>!string.IsNullOrWhiteSpace(x)));
+            return string.Join("/", new[] {path, separator.ToString()}.Where(x => !string.IsNullOrWhiteSpace(x)));
         }
 
         public T GetConfigAtLevel(params string[] dimensions)
@@ -113,7 +114,7 @@ namespace TomlConfig
             {
                 return GetConfigAtLevel(SkipLast(dimensions));
             }
-            
+
             throw new TomlConfigurationException("Not configuration matched.");
         }
 
@@ -133,6 +134,7 @@ namespace TomlConfig
                     {
                         customAttribute.Target = x;
                     }
+
                     return customAttribute;
                 })
                 .Where(x => x != null)
@@ -142,10 +144,10 @@ namespace TomlConfig
             if (!dimensions.Any())
             {
                 throw new TomlConfigurationException($"No dimension is specified on the type {typeof(T).FullName} " +
-                                                     $"at least one CascadeDimensionAttribute should be specified" +
-                                                     $" on the type.");
+                                                     "at least one CascadeDimensionAttribute should be specified" +
+                                                     " on the type.");
             }
-            
+
             return dimensions;
         }
     }
