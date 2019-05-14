@@ -2,6 +2,7 @@ namespace Test
 {
     using System;
     using System.Text.RegularExpressions;
+    using FluentAssertions.Common;
     using NFluent;
     using TomlConfig;
     using Xunit;
@@ -29,8 +30,7 @@ namespace Test
         private static void VerifyPropertyType(Type type, string propName, Type propType)
         {
             var prop = type.GetProperty(propName);
-            Check.That(prop.PropertyType)
-                .IsEqualTo(propType);
+            prop.PropertyType.IsSameOrInherits(propType);
         }
 
         [Fact]

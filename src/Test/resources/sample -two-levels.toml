@@ -1,0 +1,33 @@
+﻿# This is a sample file that demonstrates configuration with three levels of configuration.
+
+Host = "www.default.com"
+Path = "/"
+FileType = "html"
+
+
+[[SubDomain]]
+
+    Host = "www.site1.com"
+    FileType = "java"
+
+    [[SubDomain.Paths]]
+        Path = "/site1/php"
+        FileType = "php"
+    
+    [[SubDomain.Paths]]
+    Path = "/site1/java"
+    FileType = "java"
+
+[[SubDomain]]
+Host = "www.site2.com"
+FileType = "html"
+
+    [[SubDomain.Paths]]
+    Path = "/site2/php"
+    FileType = "php"
+
+    [[SubDomain.Paths]]
+    Path = "/site2/dotnet"
+    FileType = "java"
+        
+   

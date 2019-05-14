@@ -68,6 +68,28 @@ namespace Test
                 .IsEqualTo("ACME LTD.");
 
         }
+        
+        public class SampleConfigWithTowLevelDimension
+        {
+            [CascadeDimension(0, "SubDomain")]
+            public string Host { get; set; }
+            [CascadeDimension(0, "Paths")]
+            public string Path { get; set; }
+            public string FileType { get; set; }
+        }
+
+        [Fact]
+        public void Test()
+        {
+            var data = Resources.Load("sample -two-levels.toml");
+            var subject = new CascadingConfig<SampleConfigWithTowLevelDimension>(data);
+            var root = subject.GetConfigAtLevel();
+
+            Check.That(root.Host).IsEqualTo("www.default.com");
+            Check.That(root.Path).IsEqualTo("/");
+            Check.That(root.FileType).IsEqualTo("html");
+        }
+
 
     }
 }

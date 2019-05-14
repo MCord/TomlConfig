@@ -7,7 +7,7 @@ namespace TomlConfig
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CSharp;
 
-    public class Compiler
+    internal class Compiler
     {
         public Type CompileContainer(Type type, string[] dimensions)
         {
@@ -61,7 +61,7 @@ namespace TomlConfig
         internal string GetCode(string className, string generatedTypeName, string[] dimensions)
         {
             var props = string.Join("\n        ",
-                dimensions.Select(x => $"public {className}[] {x} {{ get; set; }}"));
+                dimensions.Select(x => $"public {generatedTypeName}[] {x} {{ get; set; }}"));
 
             var code = @"
 namespace generated

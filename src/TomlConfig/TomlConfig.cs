@@ -5,7 +5,8 @@
     using System.IO;
     using System.Linq;
     using System.Reflection;
-    using Nett;
+    using Tomlyn;
+    using Tomlyn.Model;
 
     public class TomlConfig
     {
@@ -29,8 +30,8 @@
         public static object Read(Type t, Stream data)
         {
             TomlConfig tc = new TomlConfig();
-            var tomlTable = Toml.ReadStream(data);
-            return tc.ConvertTable(t, tomlTable);
+            var tomlTable = Toml.Parse(new StreamReader(data).ReadToEnd());
+            return tc.ConvertTable(t, tomlTable.ToModel());
         }
 
         /// <summary>
@@ -58,8 +59,8 @@
         /// <remarks>If a property for the instance is not specified in the stream, the value from the default instance will be set on the object.</remarks>
         public object ReadWithDefault(Type type, Stream data, object @default = default)
         {
-            var tomlTable = Toml.ReadStream(data);
-            return ConvertTable(type, tomlTable, @default);
+            var tomlTable = Toml.Parse(new StreamReader(data).ReadToEnd());
+            return ConvertTable(type, tomlTable.ToModel(), @default);
         }
 
         /// <summary>
@@ -84,18 +85,27 @@
 
             var properties = t.GetProperties(BindingFlags.Public | BindingFlags.Instance).ToList();
 
-            foreach (var kv in tomlTable.Rows)
+            foreach (var key in tomlTable.Keys)
             {
-                var match = properties.FirstOrDefault(x => x.Name == kv.Key);
+                var match = properties.FirstOrDefault(x => x.Name == key);
 
                 if (match == null)
                 {
                     throw new TomlConfigurationException(
-                        $"No public instance property named '{kv.Key}' is found on '{t.FullName}'");
+                        $"No public instance property named '{key}' is found on '{t.FullName}'");
                 }
 
                 properties.Remove(match);
-                match.SetValue(instance, ConvertToType(match.PropertyType, kv.Value));
+                try
+                {
+                    match.SetValue(instance, ConvertToType(match.PropertyType, tomlTable[key]));
+                }
+                catch (Exception ex)
+                {
+                    throw new TomlConfigurationException(
+                        $"Unable to convert value '{tomlTable[key]}' to type {match.PropertyType} from key {key}"
+                        ,ex);
+                }
             }
 
             if (@default != null)
@@ -110,21 +120,20 @@
             return instance;
         }
 
-        private object ConvertToType(Type targetType, TomlObject value)
+        private object ConvertToType(Type targetType, object value)
         {
             switch (value)
             {
-                case TomlArray a:
-                    return ConvertValueArray(a.Items, targetType);
-                case TomlTableArray array:
-                    return ConvertValueArray(array.Items, targetType);
-                case TomlValue b:
-                    return Convert.ChangeType(b.UntypedValue, targetType);
+                case TomlString tString:
+                    return Convert.ChangeType(tString.Value, targetType);
+                case TomlArray array:
+                    return ConvertValueArray(array.GetTomlEnumerator(), targetType);
+                case TomlTableArray tableArray:
+                    return ConvertValueArray(tableArray, targetType);
                 case TomlTable table:
                     return ConvertTable(targetType, table);
-
                 default:
-                    throw new NotImplementedException($"A conversion from {value} to {targetType.FullName} is not implemented.");
+                    return Convert.ChangeType(value, targetType);
             }
         }
 

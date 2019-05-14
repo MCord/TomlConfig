@@ -2,7 +2,7 @@
 {
     public class Class42 : CompilerTest.Test 
     {
-        public CompilerTest.Test[] Site { get; set; }
-        public CompilerTest.Test[] User { get; set; }
+        public Class42[] Site { get; set; }
+        public Class42[] User { get; set; }
     }
 }

@@ -12,7 +12,7 @@ namespace TomlConfig
 
     public class CascadingConfig<T> where T : class
     {
-        private Dictionary<string, T> mappings;
+        private readonly Dictionary<string, T> mappings;
         
         public CascadingConfig(Stream data)
         {
