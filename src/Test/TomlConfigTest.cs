@@ -1,7 +1,6 @@
 namespace Test
 {
     using System;
-    using FluentAssertions;
     using NFluent;
     using NFluent.ApiChecks;
     using TomlConfig;
@@ -13,6 +12,15 @@ namespace Test
         {
             //todo: test all possible data types
             public string Value { get; set; }
+            public int IntValue { get; set; }
+            public double FloatValue { get; set; }
+            public bool BooleanValue { get; set; }
+            public DateTime DateTimeOffset { get; set; }
+            public DateTime LocalDateTime { get; set; }
+            public DateTime LocalTime { get; set; }
+            public int[] Array { get; set; }
+            
+            
             public DatabaseConfig Database { get; set; }
             public UserAccountConfig[] Account { get; set; }
             public float PiValue { get; set; }
@@ -50,16 +58,23 @@ namespace Test
         {
             var instance = TomlConfig.Read<SampleConfig>(Resources.Load("read.toml"));
 
-            instance.Value.Should().Be("Simple Value");
+            Check.That(instance.Value).IsEqualTo("Simple Value");
+            Check.That(instance.IntValue).IsEqualTo(42);
+            Check.That(instance.FloatValue).IsEqualTo(3.14);
+            Check.That(instance.BooleanValue).IsEqualTo(true);
+            Check.That(instance.LocalDateTime).IsEqualTo(new DateTime(2002,5,27,7,32,0));
+            Check.That(instance.DateTimeOffset).IsEqualTo(new DateTime(2002,5,27,16,32,0, DateTimeKind.Local));
+            Check.That(instance.LocalTime.TimeOfDay).IsEqualTo(new TimeSpan(0,7,32,0));
+            Check.That(instance.Array).IsEqualTo(new[] {1,2,3});
 
-            instance.Database.User.Should().Be("root");
-            instance.Database.Port.Should().Be(5432);
+            Check.That(instance.Database.User).IsEqualTo("root");
+            Check.That(instance.Database.Port).IsEqualTo(5432);
 
-            instance.Account[0].UserName.Should().Be("root");
-            instance.Account[0].IsAdmin.Should().BeTrue();
-
-            instance.Account[1].UserName.Should().Be("guest");
-            instance.Account[1].IsAdmin.Should().BeFalse();
+            Check.That(instance.Account[0].UserName).IsEqualTo("root");
+            Check.That(instance.Account[0].IsAdmin).IsEqualTo(true);
+            
+            Check.That(instance.Account[1].UserName).IsEqualTo("guest");
+            Check.That(instance.Account[1].IsAdmin).IsEqualTo(false);
         }
 
         [Fact]

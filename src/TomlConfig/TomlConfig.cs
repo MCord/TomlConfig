@@ -124,8 +124,8 @@
         {
             switch (value)
             {
-                case TomlString tString:
-                    return Convert.ChangeType(tString.Value, targetType);
+                case TomlValue v:
+                    return Convert.ChangeType(v.ValueAsObject, targetType);
                 case TomlArray array:
                     return ConvertValueArray(array.GetTomlEnumerator(), targetType);
                 case TomlTableArray tableArray:
