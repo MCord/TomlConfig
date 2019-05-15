@@ -7,29 +7,29 @@ Path = ""
     Value = 1
     Path = "1"
         [[SubLevel.SubLevel]]
-        Value = 2
-        Path = "1,2"
+        Value = 1
+        Path = "1,1"
             [[SubLevel.SubLevel.SubLevel]]
-            Value = 3
-            Path = "1,2,3"
+            Value = 1
+            Path = "1,1,1"
                 [[SubLevel.SubLevel.SubLevel.SubLevel]]
-                        Value = 4
-                        Path = "1,1,1,4"
+                        Value = 1
+                        Path = "1,1,1,1"
             
             [[SubLevel.SubLevel.SubLevel]]
-            Value = 5
-            Path = "1,2,5"
+            Value = 2
+            Path = "1,1,2"
             [[SubLevel.SubLevel.SubLevel]]
-            Value = 6
-            Path = "1,2,6"            
+            Value = 3
+            Path = "1,1,3"            
 
         [[SubLevel.SubLevel]]
-                Value = 7
-                Path = "1,7"
+                Value = 2
+                Path = "1,2"
         [[SubLevel.SubLevel]]
-                Value = 8
-                Path = "1,8"
+                Value = 3
+                Path = "1,3"
     
     [[SubLevel]]
-        Value = 9
-        Path = "9"
+        Value = 2
+        Path = "2"

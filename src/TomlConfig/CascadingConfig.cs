@@ -62,44 +62,31 @@ namespace TomlConfig
             var rootPath = KeyPath.Empty;
             var result = new Dictionary<KeyPath, T> {{rootPath, instance}};
 
-            var ancestry = new Stack<T>();
-            ancestry.Push(instance);
-            AddDimension(result, ancestry, dimensions[0], dimensions.Skip(1).ToArray(), rootPath);
+            AddDimensions(result, instance, dimensions, rootPath);
 
             return result;
         }
 
-        private void AddDimension(Dictionary<KeyPath, T> result, Stack<T> ancestry,
-            CascadeDimensionAttribute currentDimension,
-            CascadeDimensionAttribute[] remaining, KeyPath path)
+        private void AddDimensions(Dictionary<KeyPath, T> result, T instance,
+            CascadeDimensionAttribute[] dimensions, KeyPath path)
         {
-            var valueArray = (T[]) ancestry.Peek().GetType().GetProperty(currentDimension.Name)
-                ?.GetValue(ancestry.Peek());
-
-            if (valueArray == null || valueArray.Length == 0)
+            foreach (var dimension in dimensions)
             {
-                return;
-            }
+                var valueArray = (T[]) instance.GetType().GetProperty(dimension.Name)
+                    ?.GetValue(instance);
 
-            foreach (var dimensionInstance in valueArray)
-            {
-                var subPath = path.GetSubPath(currentDimension.Target.GetValue(dimensionInstance)?.ToString());
-                result.Add(subPath, dimensionInstance);
-
-                if (remaining.Any())
+                if (valueArray == null || valueArray.Length == 0)
                 {
-                    ancestry.Push(dimensionInstance);
-                    AddDimension(result, ancestry, remaining[0], remaining.Skip(1).ToArray(), subPath);
-                    ancestry.Pop();
+                    continue;
+                }
+
+                foreach (var dimensionInstance in valueArray)
+                {
+                    var subPath = path.GetSubPath(dimension.Target.GetValue(dimensionInstance)?.ToString());
+                    result.Add(subPath, dimensionInstance);
+                    AddDimensions(result, dimensionInstance, dimensions,subPath);
                 }
             }
-        }
-
-
-        private static string[] GetSubPath(string[] path, string toAdd)
-        {
-            var subPath = new List<string>(path) {toAdd};
-            return subPath.Where(x => x != null).ToArray();
         }
 
         public T GetConfigAtLevel(params string[] dimensions)
@@ -150,20 +137,20 @@ namespace TomlConfig
             return dimensions;
         }
 
-        public IEnumerable<T> GetAllConfigEntries()
+        public IEnumerable<(string[], T)> GetAllConfigEntries()
         {
-            return mappings.Values;
+            return mappings.Select(x => (x.Key.Values, x.Value));
         }
 
         private class KeyPath
         {
-            private readonly string[] values;
+            public readonly string[] Values;
 
             public KeyPath(string[] values)
             {
-                this.values = values;
+                Values = values;
             }
-            
+
             public static KeyPath Empty => new KeyPath(new string[0]);
 
             public KeyPath GetSubPath(string value)
@@ -172,21 +159,21 @@ namespace TomlConfig
                 {
                     throw new TomlConfigurationException("Key cannot be null");
                 }
-                
-                var keys = new List<string>(values) {value};
+
+                var keys = new List<string>(Values) {value};
                 return new KeyPath(keys.ToArray());
             }
 
             protected bool Equals(KeyPath other)
             {
-                if (other.values.Length != values.Length)
+                if (other.Values.Length != Values.Length)
                 {
                     return false;
                 }
 
-                for (int i = 0; i < other.values.Length; i++)
+                for (int i = 0; i < other.Values.Length; i++)
                 {
-                    if(other.values[i] != values[i])
+                    if (other.Values[i] != Values[i])
                     {
                         return false;
                     }
@@ -217,9 +204,13 @@ namespace TomlConfig
 
             public override int GetHashCode()
             {
-                return string.Join("", values).GetHashCode();
+                return string.Join("", Values).GetHashCode();
+            }
+
+            public override string ToString()
+            {
+                return string.Join(">", Values);
             }
         }
     }
-    
 }

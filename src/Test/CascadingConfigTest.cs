@@ -113,13 +113,24 @@ namespace Test
             Check.That(subDomain2Path2.FileType).IsEqualTo("dotnet");
         }
 
+        public class MultiLevelConfig
+        {
+            [CascadeDimension(0, "SubLevel")]
+            public int Value { get; set; }
+            public string Path { get; set; }
+        }
+
         [Fact]
         public void Test()
         {
-            var data = Resources.Load("sample-3-levels.toml");
-            var subject = new CascadingConfig<SampleConfigWithTowLevelDimension>(data);
+            var data = Resources.Load("multi-level.toml");
+            var subject = new CascadingConfig<MultiLevelConfig>(data);
 
-            var entries = subject.GetAllConfigEntries();
+            foreach (var entry in subject.GetAllConfigEntries())
+            {
+                Check.That(entry.Item2.Path)
+                    .IsEqualTo(string.Join(",", entry.Item1));
+            }
         }
 
     }
