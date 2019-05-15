@@ -12,7 +12,7 @@ namespace TomlConfig
 
     public class CascadingConfig<T> where T : class
     {
-        private readonly Dictionary<string, T> mappings;
+        private readonly Dictionary<KeyPath, T> mappings;
 
         public CascadingConfig(Stream data)
         {
@@ -57,20 +57,21 @@ namespace TomlConfig
             mappings = ReadMappingsFromInstance(instance, dimensions);
         }
 
-        private Dictionary<string, T> ReadMappingsFromInstance(T instance, CascadeDimensionAttribute[] dimensions)
+        private Dictionary<KeyPath, T> ReadMappingsFromInstance(T instance, CascadeDimensionAttribute[] dimensions)
         {
-            var result = new Dictionary<string, T> {{"", instance}};
+            var rootPath = KeyPath.Empty;
+            var result = new Dictionary<KeyPath, T> {{rootPath, instance}};
 
             var ancestry = new Stack<T>();
             ancestry.Push(instance);
-            AddDimension(result, ancestry, dimensions[0], dimensions.Skip(1).ToArray(), string.Empty);
+            AddDimension(result, ancestry, dimensions[0], dimensions.Skip(1).ToArray(), rootPath);
 
             return result;
         }
 
-        private void AddDimension(Dictionary<string, T> result, Stack<T> ancestry,
+        private void AddDimension(Dictionary<KeyPath, T> result, Stack<T> ancestry,
             CascadeDimensionAttribute currentDimension,
-            CascadeDimensionAttribute[] remaining, string path)
+            CascadeDimensionAttribute[] remaining, KeyPath path)
         {
             var valueArray = (T[]) ancestry.Peek().GetType().GetProperty(currentDimension.Name)
                 ?.GetValue(ancestry.Peek());
@@ -82,8 +83,7 @@ namespace TomlConfig
 
             foreach (var dimensionInstance in valueArray)
             {
-                var separator = currentDimension.Target.GetValue(dimensionInstance);
-                var subPath = GetSubPath(path, separator);
+                var subPath = path.GetSubPath(currentDimension.Target.GetValue(dimensionInstance)?.ToString());
                 result.Add(subPath, dimensionInstance);
 
                 if (remaining.Any())
@@ -96,16 +96,15 @@ namespace TomlConfig
         }
 
 
-        private static string GetSubPath(string path, object separator)
+        private static string[] GetSubPath(string[] path, string toAdd)
         {
-            return string.Join("/", new[] {path, separator.ToString()}.Where(x => !string.IsNullOrWhiteSpace(x)));
+            var subPath = new List<string>(path) {toAdd};
+            return subPath.Where(x => x != null).ToArray();
         }
 
         public T GetConfigAtLevel(params string[] dimensions)
         {
-            var key = string.Join("/", dimensions);
-
-            if (mappings.TryGetValue(key, out var value))
+            if (mappings.TryGetValue(new KeyPath(dimensions), out var value))
             {
                 return value;
             }
@@ -150,5 +149,77 @@ namespace TomlConfig
 
             return dimensions;
         }
+
+        public IEnumerable<T> GetAllConfigEntries()
+        {
+            return mappings.Values;
+        }
+
+        private class KeyPath
+        {
+            private readonly string[] values;
+
+            public KeyPath(string[] values)
+            {
+                this.values = values;
+            }
+            
+            public static KeyPath Empty => new KeyPath(new string[0]);
+
+            public KeyPath GetSubPath(string value)
+            {
+                if (value == null)
+                {
+                    throw new TomlConfigurationException("Key cannot be null");
+                }
+                
+                var keys = new List<string>(values) {value};
+                return new KeyPath(keys.ToArray());
+            }
+
+            protected bool Equals(KeyPath other)
+            {
+                if (other.values.Length != values.Length)
+                {
+                    return false;
+                }
+
+                for (int i = 0; i < other.values.Length; i++)
+                {
+                    if(other.values[i] != values[i])
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            public override bool Equals(object obj)
+            {
+                if (ReferenceEquals(null, obj))
+                {
+                    return false;
+                }
+
+                if (ReferenceEquals(this, obj))
+                {
+                    return true;
+                }
+
+                if (obj.GetType() != this.GetType())
+                {
+                    return false;
+                }
+
+                return Equals((KeyPath) obj);
+            }
+
+            public override int GetHashCode()
+            {
+                return string.Join("", values).GetHashCode();
+            }
+        }
     }
+    
 }

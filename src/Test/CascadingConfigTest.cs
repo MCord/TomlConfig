@@ -77,15 +77,50 @@ namespace Test
         }
 
         [Fact]
-        public void Test()
+        public void ShouldReadConfigWith3Levels()
         {
-            var data = Resources.Load("sample -two-levels.toml");
+            var data = Resources.Load("sample-3-levels.toml");
             var subject = new CascadingConfig<SampleConfigWithTowLevelDimension>(data);
             var root = subject.GetConfigAtLevel();
 
             Check.That(root.Host).IsEqualTo("www.default.com");
             Check.That(root.Path).IsEqualTo("/");
             Check.That(root.FileType).IsEqualTo("html");
+
+            var subDomainHost = "www.site1.com";
+            var subdomain1 = subject.GetConfigAtLevel(subDomainHost);
+
+            Check.That(subdomain1.Host).IsEqualTo(subDomainHost);
+            Check.That(subdomain1.Path).IsEqualTo("/");
+            Check.That(subdomain1.FileType).IsEqualTo("java");
+
+            var subdomain1PhpPath = subject.GetConfigAtLevel(subDomainHost, "/site1/php");
+            
+            Check.That(subdomain1PhpPath.Host).IsEqualTo(subDomainHost);
+            Check.That(subdomain1PhpPath.Path).IsEqualTo("/site1/php");
+            Check.That(subdomain1PhpPath.FileType).IsEqualTo("php");
+            
+            var subDomainHostPath2Value = "/site1/java";
+            var subdomain1PhpPath2 = subject.GetConfigAtLevel(subDomainHost, "/site1/java");
+            
+            Check.That(subdomain1PhpPath2.Host).IsEqualTo(subDomainHost);
+            Check.That(subdomain1PhpPath2.Path).IsEqualTo("/site1/java");
+            Check.That(subdomain1PhpPath2.FileType).IsEqualTo("java");
+
+
+            var subDomain2Path2 = subject.GetConfigAtLevel("www.site2.com", "/site2/dotnet");
+
+            Check.That(subDomain2Path2.FileType).IsEqualTo("dotnet");
         }
+
+        [Fact]
+        public void Test()
+        {
+            var data = Resources.Load("sample-3-levels.toml");
+            var subject = new CascadingConfig<SampleConfigWithTowLevelDimension>(data);
+
+            var entries = subject.GetAllConfigEntries();
+        }
+
     }
 }

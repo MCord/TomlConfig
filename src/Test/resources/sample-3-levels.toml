@@ -1,15 +1,17 @@
 ﻿# This is a sample file that demonstrates configuration with three levels of configuration.
 
+# Root Level configuration
 Host = "www.default.com"
 Path = "/"
 FileType = "html"
 
-
+# Subdomain, Second Level configuration
 [[SubDomain]]
 
     Host = "www.site1.com"
     FileType = "java"
 
+    # Path Third Level configuration
     [[SubDomain.Paths]]
         Path = "/site1/php"
         FileType = "php"
@@ -28,6 +30,6 @@ FileType = "html"
 
     [[SubDomain.Paths]]
     Path = "/site2/dotnet"
-    FileType = "java"
+    FileType = "dotnet"
         
    

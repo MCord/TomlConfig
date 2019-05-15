@@ -1,0 +1,35 @@
+﻿# This sample file demonstrates a multi dimension config file.
+
+Value = 0
+Path = ""
+
+    [[SubLevel]]
+    Value = 1
+    Path = "1"
+        [[SubLevel.SubLevel]]
+        Value = 2
+        Path = "1,2"
+            [[SubLevel.SubLevel.SubLevel]]
+            Value = 3
+            Path = "1,2,3"
+                [[SubLevel.SubLevel.SubLevel.SubLevel]]
+                        Value = 4
+                        Path = "1,1,1,4"
+            
+            [[SubLevel.SubLevel.SubLevel]]
+            Value = 5
+            Path = "1,2,5"
+            [[SubLevel.SubLevel.SubLevel]]
+            Value = 6
+            Path = "1,2,6"            
+
+        [[SubLevel.SubLevel]]
+                Value = 7
+                Path = "1,7"
+        [[SubLevel.SubLevel]]
+                Value = 8
+                Path = "1,8"
+    
+    [[SubLevel]]
+        Value = 9
+        Path = "9"
