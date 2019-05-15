@@ -23,7 +23,7 @@ namespace TomlConfig
 
             var containerType = compiler.CompileContainer(typeof(T), dimensionNames);
 
-            var tc = new TomlConfig();
+            var tc = new TomlConfigReader();
             var stack = new Stack<T>();
 
             tc.OnTableParsingStarted += (i, table, @default) =>
@@ -52,7 +52,7 @@ namespace TomlConfig
 
                 stack.Pop();
             };
-            var instance = (T) tc.ReadWithDefault(containerType, data);
+            var instance = (T) tc.ReadWithDefault(containerType, data, null);
 
             mappings = ReadMappingsFromInstance(instance, dimensions);
         }

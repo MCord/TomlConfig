@@ -97,5 +97,21 @@ namespace Test
             Check.That(objectInstance.PiValue)
                 .IsEqualTo(@default.PiValue);
         }
+
+        public class CustomConversionConfig
+        {
+            public int Value { get; set; }
+        }
+        
+        
+        [Fact]
+        public void ShouldUseCustomConversion()
+        {
+            var tc = new TomlConfigReader();
+            
+            //var instance = tc.ReadObject<CustomConversionConfig>(Resources.Load("read.toml"));
+            
+        }
+
     }
 }
