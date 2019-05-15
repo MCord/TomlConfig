@@ -100,17 +100,18 @@ namespace Test
 
         public class CustomConversionConfig
         {
-            public int Value { get; set; }
+            public int MagicValue { get; set; }
         }
         
         
         [Fact]
         public void ShouldUseCustomConversion()
         {
-            var tc = new TomlConfigReader();
-            
-            //var instance = tc.ReadObject<CustomConversionConfig>(Resources.Load("read.toml"));
-            
+            var reader = new TomlConfigReader();
+            reader.AddTypeConverter(TypeConverter.From<int>((type, o) => 42));
+            var instance = reader.Read<CustomConversionConfig>(Resources.Load("missmatched-type.toml"));
+
+            Check.That(instance.MagicValue).IsEqualTo(42);
         }
 
     }

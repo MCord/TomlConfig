@@ -55,9 +55,8 @@
         /// <returns>An object deserialized from file content.</returns>
         public object Read(Type t, Stream data)
         {
-            var tc = new TomlConfigReader();
             var tomlTable = Toml.Parse(new StreamReader(data).ReadToEnd());
-            return tc.ConvertTable(t, tomlTable.ToModel());
+            return ConvertTable(t, tomlTable.ToModel());
         }
 
         /// <summary>
