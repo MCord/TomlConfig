@@ -13,6 +13,13 @@ namespace TomlConfig
             key = keyProvider?.Invoke()
                        ?? Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("MASTER_KEY") ??
                                                  throw new TomlConfigurationException("No master key provided in environment variable 'MASTER_KEY'"));
+
+            if (key.Length != 32)
+            {
+                throw new TomlConfigurationException(
+                    $"The length of the key should be exactly 32 byes," +
+                    $" the provided  key has a length of {key.Length}");
+            }
         }
 
         public string Encrypt(string secret)
