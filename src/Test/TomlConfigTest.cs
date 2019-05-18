@@ -1,6 +1,8 @@
 namespace Test
 {
     using System;
+    using System.IO;
+    using System.Text;
     using NFluent;
     using NFluent.ApiChecks;
     using TomlConfig;
@@ -108,11 +110,37 @@ namespace Test
         public void ShouldUseCustomConversion()
         {
             var reader = new TomlConfigReader();
-            reader.AddTypeConverter(TypeConverter.From<int>((type, o) => 42));
+            reader.AddTypeConverter(TypeConverter.From((type, o) => 42));
             var instance = reader.Read<CustomConversionConfig>(Resources.Load("missmatched-type.toml"));
 
             Check.That(instance.MagicValue).IsEqualTo(42);
         }
+
+        public class ConfigWithSecret
+        {
+            [Secret]
+            public string MyPassword { get; set; }
+        }
+        
+        [Fact]
+        public void ShouldDecryptSecrets()
+        {
+            var reader = new TomlConfigReader();
+            var key = Security.GenerateKey();
+            
+            var secretKeeper = new SecretKeeper(() => key);
+            reader.AddTypeConverter(new PasswordTypeConverter(secretKeeper));
+
+            var secret = "MyVerySecretPassword";
+            
+            var data = $"MyPassword = \"{secretKeeper.Encrypt(secret)}\"";
+            
+            var instance = reader.Read<ConfigWithSecret>(new MemoryStream(Encoding.UTF8.GetBytes(data)));
+
+            Check.That(instance.MyPassword)
+                .IsEqualTo(secret);
+        }
+
 
     }
 }

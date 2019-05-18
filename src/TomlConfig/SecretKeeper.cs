@@ -77,7 +77,7 @@ namespace TomlConfig
         {
             throw new TomlConfigurationException(
                 $"Provided master key with thumbnail {Security.ToHexString(expected)} does not match the master key with which" +
-                $" the secret was encrypted (thumbnail {Security.ToHexString(actual)}");
+                $" the secret was encrypted (thumbnail {Security.ToHexString(actual)})");
         }
 
         public bool IsValidCypher(string value, out byte[] thumbnail, out byte[] cypher)

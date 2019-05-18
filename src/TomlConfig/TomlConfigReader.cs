@@ -113,7 +113,7 @@
                 properties.Remove(match);
                 try
                 {
-                    match.SetValue(instance, ConvertToType(match.PropertyType, tomlTable[key]));
+                    match.SetValue(instance, ConvertToType(match.PropertyType, tomlTable[key], match));
                 }
                 catch (Exception ex)
                 {
@@ -135,12 +135,12 @@
             return instance;
         }
 
-        private object ConvertToType(Type targetType, object value)
+        private object ConvertToType(Type targetType, object value, PropertyInfo propInfo)
         {
             switch (value)
             {
                 case TomlValue v:
-                    return Convert(v.ValueAsObject, targetType);
+                    return Convert(v.ValueAsObject, targetType, propInfo);
                 case TomlArray array:
                     return ConvertValueArray(array.GetTomlEnumerator(), targetType);
                 case TomlTableArray tableArray:
@@ -148,15 +148,15 @@
                 case TomlTable table:
                     return ConvertTable(targetType, table);
                 default:
-                    return Convert(value, targetType);
+                    return Convert(value, targetType, propInfo);
             }
         }
 
-        private object Convert(object value, Type t)
+        private object Convert(object value, Type t, PropertyInfo propInfo)
         {
             foreach (var cnv in converters)
             {
-                if (cnv.CanConvert(t))
+                if (cnv.CanConvert(t, propInfo))
                 {
                     return cnv.Convert(value, t);
                 }
@@ -178,7 +178,7 @@
             }
 
             var converted = items
-                .Select(x => ConvertToType(elementType, x)).ToArray();
+                .Select(x => ConvertToType(elementType, x, null)).ToArray();
 
             var result = Array.CreateInstance(elementType, converted.Length);
 

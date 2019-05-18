@@ -6,7 +6,6 @@ namespace TomlConfigTool
     using System.Linq;
     using System.Text.RegularExpressions;
     using TomlConfig;
-    using Tomlyn.Model;
     using Tomlyn.Syntax;
 
     public class ConfigToolImplementation
@@ -37,31 +36,64 @@ namespace TomlConfigTool
 
             foreach (var file in files)
             {
-                EncryptFile(file);
+                var changes = EncryptFile(file);
+                if (changes > 0)
+                {
+                    Console.WriteLine($"Updated {changes} properties in " +
+                                      $"{Path.GetRelativePath(Environment.CurrentDirectory,file)}");
+                }
             }
         }
 
-        private void EncryptFile(string file)
+        private int EncryptFile(string file)
         {
-            var table = TomlConfig.ReadTable(file);
-            bool hasChanges = false;
-            foreach (var keyValue in table.KeyValues.Where(IsSecretKey))
+            try
             {
-                if (keyValue.Value is StringValueSyntax token 
+                var table = TomlConfig.ReadTable(file);
+                
+                var changes = EncryptValues(table.KeyValues);
+
+                foreach (var subTable in table.Tables)
+                {
+                    changes += EncryptTable(subTable);
+                }
+
+                TomlConfig.WriteDocument(file, table);
+                return changes;
+            }
+            catch (Exception ex)
+            {
+                throw new TomlConfigurationException(
+                    $"Error while encrypting '{Path.GetRelativePath(Environment.CurrentDirectory,file)}'\n\t"+ ex.Message);
+            }
+        }
+
+        private int EncryptTable(TableSyntaxBase table)
+        {
+            var changes = EncryptValues(table.Items);
+
+            foreach (var sub in table.Items.OfType<TableSyntax>())
+            {
+                changes+= EncryptTable(sub);
+            }
+
+            return changes;
+        }
+
+        private int EncryptValues(SyntaxList<KeyValueSyntax> items)
+        {
+            var changes = 0;
+            foreach (var keyValue in items.Where(IsSecretKey))
+            {
+                if (keyValue.Value is StringValueSyntax token
                     && EncryptValue(token.Value, out var cypher))
                 {
                     keyValue.Value = new StringValueSyntax(cypher);
-                    hasChanges = true;
+                    changes++;
                 }
             }
 
-            if (!hasChanges)
-            {
-                Console.WriteLine($"Warning: no secrets where found in {file}");
-                return;
-            }
-
-            TomlConfig.WriteDocument(file, table);
+            return changes;
         }
 
         private bool EncryptValue(string value, out string cypherValue)

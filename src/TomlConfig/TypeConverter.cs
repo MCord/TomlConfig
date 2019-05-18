@@ -1,6 +1,7 @@
 namespace TomlConfig
 {
     using System;
+    using System.Reflection;
 
     public static class TypeConverter 
     {
@@ -13,7 +14,7 @@ namespace TomlConfig
                 this.conversion = conversion;
             }
 
-            public bool CanConvert(Type t)
+            public bool CanConvert(Type t, PropertyInfo info)
             {
                 return t == typeof(T);
             }

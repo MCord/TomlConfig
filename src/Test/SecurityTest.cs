@@ -29,7 +29,7 @@ namespace Test
             Check.That("my little secret")
                 .IsEqualTo(Security.Decrypt(cypher, key, nonEncryptedData.Length));
         }
-
+        
         [Fact]
         public void SameSecretEncryptedTwiceShouldGenerateTwoDifferentCyphers()
         {
