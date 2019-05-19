@@ -57,7 +57,7 @@ namespace TomlConfigTool
             {
                 var table = TomlConfig.ReadTable(file);
                 var found = 0;
-                foreach (var keyValue in table.GetAllKeys())
+                foreach (var keyValue in GetAllProperties(table))
                 {
                     if (keyValue.Value is StringValueSyntax token
                         && DecryptValue(token.Value, out var cypher))
@@ -85,7 +85,7 @@ namespace TomlConfigTool
             {
                 var table = TomlConfig.ReadTable(file);
                 var changes = 0;
-                foreach (var keyValue in table.GetAllKeys())
+                foreach (var keyValue in GetAllProperties(table))
                 {
                     if (keyValue.Value is StringValueSyntax token
                         && EncryptValue(token.Value, out var cypher))
@@ -107,6 +107,16 @@ namespace TomlConfigTool
             }
         }
 
+        private IEnumerable<KeyValueSyntax> GetAllProperties(DocumentSyntax table)
+        {
+            foreach (var prop in table.GetAllKeys())
+            {
+                if (configKeyNames.Any(c=> c.IsMatch(prop.Key.ToString())))
+                {
+                    yield return prop;
+                }
+            }
+        }
 
         private bool EncryptValue(string value, out string cypherValue)
         {
