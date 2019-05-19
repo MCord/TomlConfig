@@ -3,32 +3,25 @@ namespace TomlConfig
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Text;
     using Test;
 
     public class SecretKeeper
     {
-        private readonly byte[] key;
+        private readonly string key;
 
-        public SecretKeeper(Func<byte[]> keyProvider = null)
+        public SecretKeeper(Func<string> keyProvider = null)
         {
             key = keyProvider?.Invoke()
-                  ?? Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("MASTER_KEY") ??
+                  ?? (Environment.GetEnvironmentVariable("MASTER_KEY") ??
                                             throw new TomlConfigurationException(
                                                 "No master key provided in environment variable 'MASTER_KEY'"));
-
-            if (key.Length != 32)
-            {
-                throw new TomlConfigurationException(
-                    "The length of the key should be exactly 32 byes," +
-                    $" the provided  key has a length of {key.Length}");
-            }
         }
 
         public string Encrypt(string secret)
         {
             var thumbnail = CalculateThumbnail();
-            return Convert.ToBase64String(Security.Encrypt(secret, key, thumbnail));
+            var keyBytes = Security.GenerateHash(key);
+            return Convert.ToBase64String(Security.Encrypt(secret, keyBytes, thumbnail));
         }
 
         private byte[] CalculateThumbnail()
@@ -52,7 +45,8 @@ namespace TomlConfig
             }
 
             VerifySecretThumbnail(thumbnail);
-            return Security.Decrypt(cypherBytes, key, thumbnail.Length);
+            var keyBytes = Security.GenerateHash(key);
+            return Security.Decrypt(cypherBytes, keyBytes, thumbnail.Length);
         }
 
         public void VerifySecretThumbnail(byte[] thumbnail)

@@ -18,7 +18,7 @@ namespace Test
             
             File.WriteAllText(file, "MyPassword = \"ABC\"");
 
-            var key = Security.GenerateKey();
+            var key = Guid.NewGuid().ToString();
             
             var subject = new ConfigToolImplementation(new List<string> {file}, false, 
                 key, new List<string>

@@ -2,10 +2,13 @@ namespace Test
 {
     using System;
     using System.IO;
+    using System.Linq;
     using System.Text;
     using NFluent;
     using NFluent.ApiChecks;
     using TomlConfig;
+    using Tomlyn;
+    using Tomlyn.Syntax;
     using Xunit;
 
     public class TomlConfigTest
@@ -126,7 +129,7 @@ namespace Test
         public void ShouldDecryptSecrets()
         {
             var reader = new TomlConfigReader();
-            var key = Security.GenerateKey();
+            var key = Security.GenerateKeyAsString();
             
             var secretKeeper = new SecretKeeper(() => key);
             reader.AddTypeConverter(new PasswordTypeConverter(secretKeeper));
@@ -141,6 +144,13 @@ namespace Test
                 .IsEqualTo(secret);
         }
 
+        [Fact]
+        public void ShouldGetAllChildren()
+        {
+            var doc = Toml.Parse("A=1\nB=2\n[C]\nD=3");
+            var total = doc.GetAllKeys().Sum(x => int.Parse(x.Value.ToString()));
+            Check.That(total).IsEqualTo(6);
+        }
 
     }
 }

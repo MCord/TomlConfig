@@ -60,14 +60,23 @@ namespace Test
         public static readonly int MinPasswordLength = 12;
 
         /// <summary>
-        /// Helper that generates a random key on each call.
+        /// Generates a random.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>a random key.</returns>
         public static byte[] GenerateKey()
         {
             var key = new byte[KeyBitSize / 8];
             Random.GetBytes(key);
             return key;
+        }
+
+        /// <summary>
+        /// Generates a random key as a hex encoded string
+        /// </summary>
+        /// <returns>Hex encoded key.</returns>
+        public static string GenerateKeyAsString()
+        {
+            return ToHexString(GenerateKey());
         }
 
         /// <summary>

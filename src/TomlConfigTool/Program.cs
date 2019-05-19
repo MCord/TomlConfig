@@ -12,8 +12,12 @@
     {
         enum Action
         {
-            Encrypt, Decrypt, Verify, Help
+            Encrypt,
+            Decrypt,
+            Verify,
+            Help
         }
+
         static int Main(string[] args)
         {
             var filePatterns = new List<string>();
@@ -21,42 +25,59 @@
             var resursive = false;
             var help = false;
             var auto = false;
-            
-            var masterKey = string.Empty;
-            
-            var options = new OptionSet { 
-                { "f|file=", "input file name, can use wildcards or specify multiple times.", filePatterns.Add},
-                { "k|key=", "config keys containing secret data. This in a regex that should match " +
-                           "properties to be encrypted/decrypted. it defaults to any key containing 'password' in the name ", x=> configKeyNames.Add(x)},
-                { "r|recursive", "when specified would search subfolders for files", (bool r) => resursive = r},
-                { "m|master_key=", "the master key to use, defaults to the value provided by 'MASTER_KEY' environment variable", m=> masterKey = m },
-                { "a|auto", "Will generate and use a new master key, the value will be written to console.", a => auto = a != null},
-                { "h|help", "show this message and exit", h => help = h!= null},
-            };
-            
-            try {
-                
-                var extra = options.Parse (args);
-                
-                SetDefaults(filePatterns, configKeyNames);
 
+            var masterKey = string.Empty;
+
+            var options = new OptionSet
+            {
+                {"f|file=", "input file name, can use wildcards or specify multiple times.", filePatterns.Add},
+                {
+                    "k|key=", "config keys containing secret data. This in a regex that should match " +
+                              "properties to be encrypted/decrypted. it defaults to any key containing 'password' in the name ",
+                    x => configKeyNames.Add(x)
+                },
+                {"r|recursive", "when specified would search subfolders for files", (bool r) => resursive = r},
+                {
+                    "m|master_key=",
+                    "the master key to use, defaults to the value provided by 'MASTER_KEY' environment variable",
+                    m => masterKey = m
+                },
+                {
+                    "a|auto", "Will generate and use a new master key, the value will be written to console.",
+                    a => auto = a != null
+                },
+                {"h|help", "show this message and exit", h => help = h != null},
+            };
+
+            try
+            {
+                var extra = options.Parse(args);
+
+                SetDefaults(filePatterns, configKeyNames);
+                
+                
                 switch (GetAction(extra))
                 {
                     case Action.Encrypt:
-                        var implementation = new ConfigToolImplementation(filePatterns,
-                            resursive, 
-                            GetMasterKey(masterKey, auto), 
-                            configKeyNames);
-                        
-                        implementation.Encrypt();
+                        var key = GetMasterKey(masterKey, auto);
+                        VerifyKeyLength(key);
+                        GetImplementation(filePatterns, resursive, key, configKeyNames)
+                            .Encrypt();
                         return 0;
+                    
+                    case Action.Decrypt:
+                        key = GetMasterKey(masterKey, auto);
+                        GetImplementation(filePatterns, resursive, key, configKeyNames)
+                            .Decrypt();
+                        return 0;
+                        
                     default:
                         ShowHelp(options);
                         return 0;
                 }
-                
-                
-            } catch (OptionException e) {
+            }
+            catch (OptionException e)
+            {
                 Console.WriteLine(e.Message);
                 ShowHelp(options);
                 return 0;
@@ -68,43 +89,47 @@
             }
         }
 
-        private static byte[] GetMasterKey(string masterKey, bool auto)
+        private static ConfigToolImplementation GetImplementation(List<string> filePatterns, bool resursive, string key,
+            List<string> configKeyNames)
         {
-            try
+            var implementation = new ConfigToolImplementation(filePatterns,
+                resursive,
+                key,
+                configKeyNames);
+            return implementation;
+        }
+
+        private static void VerifyKeyLength(string key)
+        {
+            if (key.Length < 16)
             {
-                if (auto)
+                Console.WriteLine(
+                    $"WARNING !!! the key length ({key.Length}) is too short, please consider using a longer key.");
+            }
+        }
+
+        private static string GetMasterKey(string masterKey, bool auto)
+        {
+            if (auto)
+            {
+                if (!string.IsNullOrWhiteSpace(masterKey))
                 {
-                    if (!string.IsNullOrWhiteSpace(masterKey))
-                    {
-                        throw new Exception("--auto and -master_key options can not be used together.");    
-                    }
-                    
-                    var key = Security.GenerateKey();
-                    Console.WriteLine($"Generated a new master key: '{Convert.ToBase64String(key)}'");
-                    return key;
+                    throw new Exception("--auto and -master_key options can not be used together.");
                 }
 
-                if (masterKey == null)
-                {
-                    masterKey = Environment.GetEnvironmentVariable("MASTER_KEY");
-                }
-                
-                
-                var bytes = Convert.FromBase64String(masterKey);
+                var key = Security.GenerateKey();
+                Console.WriteLine($"Generated a new master key: '{Convert.ToBase64String(key)}'");
+                return Security.ToHexString(key);
+            }
 
-                if (bytes.Length != 32)
-                {
-                    throw new TomlConfigurationException(
-                        $"Invalid master key, key length is not 256 bits. actual : {bytes.Length}");
-                }
-                
-                return bytes;
-            }
-            catch (FormatException)
+            if (string.IsNullOrWhiteSpace(masterKey))
             {
-                throw new TomlConfigurationException(
-                    "Invalid master key, it should be a base64 encoded string with a length of 256 bits.");
+                masterKey = Environment.GetEnvironmentVariable("MASTER_KEY") ??
+                            throw new TomlConfigurationException("No master key is provided");
             }
+
+
+            return masterKey;
         }
 
         private static Action GetAction(List<string> extra)
@@ -123,7 +148,7 @@
                     return m.Item2;
                 }
             }
-            
+
             return Action.Help;
         }
 
@@ -143,16 +168,17 @@
 
         private static void ShowHelp(OptionSet options)
         {
-            Console.WriteLine("\n\nToml Config Management Tool v"+ Assembly.GetExecutingAssembly().GetName().Version);
+            Console.WriteLine("\n\nToml Config Management Tool v" + Assembly.GetExecutingAssembly().GetName().Version);
             Console.WriteLine("Verbs [encrypt | decrypt | verify]");
             Console.WriteLine("USAGE: toml-config-tool [VERB] [OPTIONS]");
             Console.WriteLine("");
             Console.WriteLine("Example: toml-config-tool encrypt --auto -f config.toml -k .+Password.+ ");
-            Console.WriteLine("This will generate a new key and encrypt the config.toml file with it. all fields containing password will be encrypted");
+            Console.WriteLine(
+                "This will generate a new key and encrypt the config.toml file with it. all fields containing password will be encrypted");
             Console.WriteLine("");
             Console.WriteLine("Use this tool to encrypt, decrypt and verify secrets in your toml files");
             Console.WriteLine("Options:");
-            options.WriteOptionDescriptions (Console.Out);
+            options.WriteOptionDescriptions(Console.Out);
         }
     }
 }

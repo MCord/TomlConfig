@@ -1,7 +1,9 @@
 namespace TomlConfig
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using Tomlyn;
     using Tomlyn.Syntax;
 
@@ -17,6 +19,32 @@ namespace TomlConfig
             using (var writer = File.CreateText(file))
             {
                 doc.WriteTo(writer);
+            }
+        }
+
+        public static IEnumerable<KeyValueSyntax> GetAllKeys(this DocumentSyntax document)
+        {
+            foreach (var value in document.KeyValues)
+            {
+                yield return value;
+            }
+
+            foreach (var value in document.Tables.SelectMany(GetAllKeys))
+            {
+                yield return value;
+            }
+        }
+
+        private static IEnumerable<KeyValueSyntax> GetAllKeys(TableSyntaxBase table)
+        {
+            foreach (var item in table.Items)
+            {
+                yield return item;
+            }
+            
+            foreach (var sub in table.Items.OfType<TableSyntax>().SelectMany(GetAllKeys))
+            {
+                yield return sub;
             }
         }
     }
