@@ -14,7 +14,7 @@ namespace TomlConfig
     {
         private readonly Dictionary<KeyPath, T> mappings;
 
-        public CascadingConfig(Stream data)
+        public CascadingConfig(Stream data, Dictionary<string, string> overrides = null)
         {
             var compiler = new Compiler();
 
@@ -55,6 +55,33 @@ namespace TomlConfig
             var instance = (T) tc.ReadWithDefault(containerType, data, null);
 
             mappings = ReadMappingsFromInstance(instance, dimensions);
+            
+            SetOverrides(mappings.Values, overrides);
+        }
+
+        private void SetOverrides(IEnumerable<T> instances, Dictionary<string,string> overrides)
+        {
+            if (overrides == null)
+            {
+                return;
+            }
+            
+            foreach (var instance in instances)
+            {
+                foreach (var keyValue in overrides)
+                {
+                    SetOverride(instance, keyValue.Key, keyValue.Value);
+                }
+            }
+        }
+
+        private void SetOverride(T instance, string propertyName, string value)
+        {
+            var prop = typeof(T).GetProperty(propertyName);
+            if (prop != null)
+            {
+                prop.SetValue(instance, Convert.ChangeType(value, prop.PropertyType));
+            }
         }
 
         private Dictionary<KeyPath, T> ReadMappingsFromInstance(T instance, CascadeDimensionAttribute[] dimensions)
@@ -101,7 +128,7 @@ namespace TomlConfig
                 return GetConfigAtLevel(SkipLast(dimensions));
             }
 
-            throw new TomlConfigurationException("Not configuration matched.");
+            throw new TomlConfigurationException("No configuration matched.");
         }
 
         private string[] SkipLast(string[] dimensions)

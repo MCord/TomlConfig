@@ -1,5 +1,7 @@
 namespace Test
 {
+    using System.Collections.Generic;
+    using System.Linq;
     using JetBrains.Annotations;
     using NFluent;
     using TomlConfig;
@@ -121,7 +123,7 @@ namespace Test
         }
 
         [Fact]
-        public void Test()
+        public void ShouldLoadMultiLevelConfig()
         {
             var data = Resources.Load("multi-level.toml");
             var subject = new CascadingConfig<MultiLevelConfig>(data);
@@ -133,5 +135,22 @@ namespace Test
             }
         }
 
+        [Fact]
+        public void ShouldOverrideProperties()
+        {
+            var data = Resources.Load("multi-level.toml");
+            var over = "overridden";
+            var subject = new CascadingConfig<MultiLevelConfig>(data, new Dictionary<string, string>()
+            {
+                {"Value", "42"},
+                {"Path", over}
+            });
+
+            foreach (var entry in subject.GetAllConfigEntries().Select(x=> x.Item2))
+            {
+                Check.That(entry.Value).IsEqualTo(42);
+                Check.That(entry.Path).IsEqualTo(over);
+            }
+        }
     }
 }
