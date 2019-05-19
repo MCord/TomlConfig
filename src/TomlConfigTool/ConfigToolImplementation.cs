@@ -32,7 +32,7 @@ namespace TomlConfigTool
                 var changes = EncryptFile(file);
                 if (changes > 0)
                 {
-                    Console.WriteLine($"Updated {changes} properties in " +
+                    Console.WriteLine($"Encrypted {changes} properties in " +
                                       $"{Path.GetRelativePath(Environment.CurrentDirectory, file)}");
                 }
             }
@@ -45,7 +45,7 @@ namespace TomlConfigTool
                 var changes = DecryptFile(file);
                 if (changes > 0)
                 {
-                    Console.WriteLine($"Updated {changes} properties in " +
+                    Console.WriteLine($"Decrypted {changes} properties in " +
                                       $"{Path.GetRelativePath(Environment.CurrentDirectory, file)}");
                 }
             }
@@ -64,7 +64,10 @@ namespace TomlConfigTool
                     {
                         keyValue.Value = new StringValueSyntax(cypher);
                         found++;
+                        continue;
                     }
+                    
+                    Console.Write($"Failed to decrypt {keyValue}");
                 }
 
 
@@ -74,7 +77,7 @@ namespace TomlConfigTool
             catch (Exception ex)
             {
                 throw new TomlConfigurationException(
-                    $"Error while encrypting '{Path.GetRelativePath(Environment.CurrentDirectory, file)}'\n\t" +
+                    $"Error while decrypting '{Path.GetRelativePath(Environment.CurrentDirectory, file)}'\n\t" +
                     ex.Message);
             }
         }
@@ -124,7 +127,7 @@ namespace TomlConfigTool
 
             if (secretKeeper.IsValidCypher(value, out var thumb, out _))
             {
-                secretKeeper.VerifySecretThumbnail(thumb);
+                secretKeeper.AssertSecretThumbnail(thumb);
                 cypherValue = null;
                 return false;
             }
@@ -139,7 +142,7 @@ namespace TomlConfigTool
 
             if (secretKeeper.IsValidCypher(cypherValue, out var thumb, out _))
             {
-                secretKeeper.VerifySecretThumbnail(thumb);
+                secretKeeper.AssertSecretThumbnail(thumb);
                 clearValue = secretKeeper.Decrypt(cypherValue);
                 return true;
             }
@@ -175,6 +178,66 @@ namespace TomlConfigTool
             if (!matchedAnyFile)
             {
                 throw new ConfigToolException($"No files found matching {string.Join("|", patterns)}");
+            }
+        }
+
+        public void Verify()
+        {
+            foreach (var file in GetFiles())
+            {
+                var changes = VerifyFile(file);
+                if (changes > 0)
+                {
+                    Console.WriteLine($"Verified {changes} properties in " +
+                                      $"{Path.GetRelativePath(Environment.CurrentDirectory, file)}");
+                }
+            }
+        }
+
+        private int VerifyFile(string file)
+        {
+            try
+            {
+                var table = TomlConfig.ReadTable(file);
+                var verified = 0;
+                foreach (var keyValue in GetAllProperties(table))
+                {
+                    verified++;
+
+                    if (keyValue.Value is StringValueSyntax token)
+                    {
+                        VerifyValue(token.Value, keyValue.Key.ToString());
+                    }
+                }
+
+                if (verified == 0)
+                {
+                    Console.WriteLine($"No Key matched specified filters : \n {string.Join("\n", configKeyNames)}");
+                }
+
+                TomlConfig.WriteDocument(file, table);
+                return verified;
+            }
+            catch (Exception ex)
+            {
+                throw new TomlConfigurationException(
+                    $"Error while verifying '{Path.GetRelativePath(Environment.CurrentDirectory, file)}'\n\t" +
+                    ex.Message);
+            };
+        }
+
+        private void VerifyValue(string cypherValue, string keyName)
+        {
+            var secretKeeper = new SecretKeeper(() => masterKey);
+
+            try
+            {
+                secretKeeper.Decrypt(cypherValue);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Failed to decrypt {keyName} from value '{cypherValue}' Error:" + ex.Message);
+                return;
             }
         }
     }

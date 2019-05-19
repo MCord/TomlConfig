@@ -70,6 +70,12 @@
                         GetImplementation(filePatterns, resursive, key, configKeyNames)
                             .Decrypt();
                         return 0;
+                    
+                    case Action.Verify:
+                        key = GetMasterKey(masterKey, auto);
+                        GetImplementation(filePatterns, resursive, key, configKeyNames)
+                            .Verify();
+                        return 0;
                         
                     default:
                         ShowHelp(options);

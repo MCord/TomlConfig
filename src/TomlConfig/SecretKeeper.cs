@@ -44,27 +44,43 @@ namespace TomlConfig
                 throw new TomlConfigurationException("Cypher is corrupted.");
             }
 
-            VerifySecretThumbnail(thumbnail);
+            AssertSecretThumbnail(thumbnail);
             var keyBytes = Security.GenerateHash(key);
             return Security.Decrypt(cypherBytes, keyBytes, thumbnail.Length);
         }
 
-        public void VerifySecretThumbnail(byte[] thumbnail)
+        public void AssertSecretThumbnail(byte[] thumbnail)
+        {
+            var expectedThumbnail = CalculateThumbnail();
+            
+            if (VerifySecretThumbnail(thumbnail))
+            {
+                return;
+            }
+
+            throw new TomlConfigurationException(
+                $"Provided master key with thumbnail {Security.ToHexString(expectedThumbnail)} does not match the master key with which" +
+                $" the secret was encrypted (thumbnail {Security.ToHexString(thumbnail)})");
+        }
+        
+        public bool VerifySecretThumbnail(byte[] thumbnail)
         {
             var expectedThumbnail = CalculateThumbnail();
 
             if (thumbnail.Length != expectedThumbnail.Length)
             {
-                ThrowThumbnailMismatch(expectedThumbnail, thumbnail);
+                return false;
             }
 
             for (var i = 0; i < expectedThumbnail.Length; i++)
             {
                 if (thumbnail[i] != expectedThumbnail[i])
                 {
-                    ThrowThumbnailMismatch(expectedThumbnail, thumbnail);
+                    return false;
                 }
             }
+
+            return true;
         }
 
         private static void ThrowThumbnailMismatch(byte[] expected, byte[] actual)
