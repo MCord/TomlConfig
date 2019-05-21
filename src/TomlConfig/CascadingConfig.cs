@@ -5,24 +5,16 @@ using System.Runtime.CompilerServices;
 namespace TomlConfig
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
-    using System.Reflection;
 
-    public class CascadingConfig<T> where T : class
+    public class CascadingConfig
     {
-        private readonly Dictionary<KeyPath, T> mappings;
-
-        public CascadingConfig(Stream data, Dictionary<string, string> overrides = null)
+        public static T Read<T>(Stream data, Dictionary<string, string> overrides = null) 
+            where T : class
         {
-            var compiler = new Compiler();
-
-            var dimensions = GetDimensions();
-            var dimensionNames = dimensions.Select(x => x.Name).ToArray();
-
-            var containerType = compiler.CompileContainer(typeof(T), dimensionNames);
-
             var tc = new TomlConfigReader();
             var stack = new Stack<T>();
 
@@ -52,191 +44,70 @@ namespace TomlConfig
 
                 stack.Pop();
             };
-            var instance = (T) tc.ReadWithDefault(containerType, data, null);
-
-            mappings = ReadMappingsFromInstance(instance, dimensions);
+            var instance = (T) tc.ReadWithDefault(typeof(T), data, null);
             
-            SetOverrides(mappings.Values, overrides);
+            SetOverrides<T>(instance, overrides);
+
+            return instance;
         }
 
-        private void SetOverrides(IEnumerable<T> instances, Dictionary<string,string> overrides)
+        public bool IsSubConfigEntityContainer<T>(Type type)
         {
-            if (overrides == null)
+            return type == typeof(T)
+                   || (type.IsArray && type.GetElementType() == typeof(T))
+                   || (type == typeof(List<T>));
+        }
+
+        private static void SetOverrides<T>(object instance, Dictionary<string,string> overrides)
+        {
+            if (overrides == null || instance == null)
             {
                 return;
             }
             
-            foreach (var instance in instances)
+            foreach (var (property, value) in instance
+                .GetType()
+                .GetProperties()
+                .Select(p=> (p,p.GetValue(instance)))
+                .Where(v=> v.Item2 != null))
             {
-                foreach (var keyValue in overrides)
+                
+                if (value is T)
                 {
-                    SetOverride(instance, keyValue.Key, keyValue.Value);
-                }
-            }
-        }
-
-        private void SetOverride(T instance, string propertyName, string value)
-        {
-            var prop = typeof(T).GetProperty(propertyName);
-            if (prop != null)
-            {
-                prop.SetValue(instance, Convert.ChangeType(value, prop.PropertyType));
-            }
-        }
-
-        private Dictionary<KeyPath, T> ReadMappingsFromInstance(T instance, CascadeDimensionAttribute[] dimensions)
-        {
-            var rootPath = KeyPath.Empty;
-            var result = new Dictionary<KeyPath, T> {{rootPath, instance}};
-
-            AddDimensions(result, instance, dimensions, rootPath);
-
-            return result;
-        }
-
-        private void AddDimensions(Dictionary<KeyPath, T> result, T instance,
-            CascadeDimensionAttribute[] dimensions, KeyPath path)
-        {
-            foreach (var dimension in dimensions)
-            {
-                var valueArray = (T[]) instance.GetType().GetProperty(dimension.Name)
-                    ?.GetValue(instance);
-
-                if (valueArray == null || valueArray.Length == 0)
-                {
+                    SetOverrides<T>(value, overrides);
                     continue;
                 }
 
-                foreach (var dimensionInstance in valueArray)
+                if (value is IEnumerable<T> enumerable)
                 {
-                    var subPath = path.GetSubPath(dimension.Target.GetValue(dimensionInstance)?.ToString());
-                    result.Add(subPath, dimensionInstance);
-                    AddDimensions(result, dimensionInstance, dimensions,subPath);
-                }
-            }
-        }
-
-        public T GetConfigAtLevel(params string[] dimensions)
-        {
-            if (mappings.TryGetValue(new KeyPath(dimensions), out var value))
-            {
-                return value;
-            }
-
-            if (dimensions.Length > 1)
-            {
-                return GetConfigAtLevel(SkipLast(dimensions));
-            }
-
-            throw new TomlConfigurationException("No configuration matched.");
-        }
-
-        private string[] SkipLast(string[] dimensions)
-        {
-            var result = new string[dimensions.Length - 1];
-            Array.Copy(dimensions, result, result.Length);
-            return result;
-        }
-
-        private static CascadeDimensionAttribute[] GetDimensions()
-        {
-            var dimensions = typeof(T).GetProperties().Select(x =>
-                {
-                    var customAttribute = x.GetCustomAttribute<CascadeDimensionAttribute>();
-                    if (customAttribute != null)
+                    foreach (var eValue in enumerable)
                     {
-                        customAttribute.Target = x;
+                        SetOverrides<T>(eValue, overrides);
                     }
 
-                    return customAttribute;
-                })
-                .Where(x => x != null)
-                .OrderBy(x => x.Order)
-                .ToArray();
-
-            if (!dimensions.Any())
-            {
-                throw new TomlConfigurationException($"No dimension is specified on the type {typeof(T).FullName} " +
-                                                     "at least one CascadeDimensionAttribute should be specified" +
-                                                     " on the type.");
+                    continue;
+                }
+                
+                if (overrides.TryGetValue(property.Name, out var overrideValue))
+                {
+                    property.SetValue(instance, Convert.ChangeType(overrideValue, property.PropertyType));
+                }
             }
-
-            return dimensions;
         }
-
-        public IEnumerable<(string[], T)> GetAllConfigEntries()
+        
+        public static IEnumerable<T> GetAllConfigEntries<T>(T instance, Func<T,IEnumerable<T>> selector)
         {
-            return mappings.Select(x => (x.Key.Values, x.Value));
-        }
+            yield return instance;
+            var subs = selector(instance);
 
-        private class KeyPath
-        {
-            public readonly string[] Values;
-
-            public KeyPath(string[] values)
+            if (subs == null)
             {
-                Values = values;
+                yield break;
             }
-
-            public static KeyPath Empty => new KeyPath(new string[0]);
-
-            public KeyPath GetSubPath(string value)
+            
+            foreach (var sub in subs.SelectMany(x=> GetAllConfigEntries(x, selector)))
             {
-                if (value == null)
-                {
-                    throw new TomlConfigurationException("Key cannot be null");
-                }
-
-                var keys = new List<string>(Values) {value};
-                return new KeyPath(keys.ToArray());
-            }
-
-            protected bool Equals(KeyPath other)
-            {
-                if (other.Values.Length != Values.Length)
-                {
-                    return false;
-                }
-
-                for (int i = 0; i < other.Values.Length; i++)
-                {
-                    if (other.Values[i] != Values[i])
-                    {
-                        return false;
-                    }
-                }
-
-                return true;
-            }
-
-            public override bool Equals(object obj)
-            {
-                if (ReferenceEquals(null, obj))
-                {
-                    return false;
-                }
-
-                if (ReferenceEquals(this, obj))
-                {
-                    return true;
-                }
-
-                if (obj.GetType() != this.GetType())
-                {
-                    return false;
-                }
-
-                return Equals((KeyPath) obj);
-            }
-
-            public override int GetHashCode()
-            {
-                return string.Join("", Values).GetHashCode();
-            }
-
-            public override string ToString()
-            {
-                return string.Join(">", Values);
+                yield return sub;
             }
         }
     }

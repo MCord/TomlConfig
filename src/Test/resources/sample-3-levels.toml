@@ -5,30 +5,30 @@ Host = "www.default.com"
 Path = "/"
 FileType = "html"
 
-# Subdomain, Second Level configuration
-[[SubDomain]]
+# Hosts, Second Level configuration
+[[Hosts]]
 
     Host = "www.site1.com"
     FileType = "java"
 
     # Path Third Level configuration
-    [[SubDomain.Paths]]
+    [[Hosts.Paths]]
         Path = "/site1/php"
         FileType = "php"
     
-    [[SubDomain.Paths]]
+    [[Hosts.Paths]]
     Path = "/site1/java"
     FileType = "java"
 
-[[SubDomain]]
+[[Hosts]]
 Host = "www.site2.com"
 FileType = "html"
 
-    [[SubDomain.Paths]]
+    [[Hosts.Paths]]
     Path = "/site2/php"
     FileType = "php"
 
-    [[SubDomain.Paths]]
+    [[Hosts.Paths]]
     Path = "/site2/dotnet"
     FileType = "dotnet"
         

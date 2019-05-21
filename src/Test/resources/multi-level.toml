@@ -3,33 +3,33 @@
 Value = 0
 Path = ""
 
-    [[SubLevel]]
+    [[SubPaths]]
     Value = 1
     Path = "1"
-        [[SubLevel.SubLevel]]
+        [[SubPaths.SubPaths]]
         Value = 1
         Path = "1,1"
-            [[SubLevel.SubLevel.SubLevel]]
+            [[SubPaths.SubPaths.SubPaths]]
             Value = 1
             Path = "1,1,1"
-                [[SubLevel.SubLevel.SubLevel.SubLevel]]
+                [[SubPaths.SubPaths.SubPaths.SubPaths]]
                         Value = 1
                         Path = "1,1,1,1"
             
-            [[SubLevel.SubLevel.SubLevel]]
+            [[SubPaths.SubPaths.SubPaths]]
             Value = 2
             Path = "1,1,2"
-            [[SubLevel.SubLevel.SubLevel]]
+            [[SubPaths.SubPaths.SubPaths]]
             Value = 3
             Path = "1,1,3"            
 
-        [[SubLevel.SubLevel]]
+        [[SubPaths.SubPaths]]
                 Value = 2
                 Path = "1,2"
-        [[SubLevel.SubLevel]]
+        [[SubPaths.SubPaths]]
                 Value = 3
                 Path = "1,3"
     
-    [[SubLevel]]
+    [[SubPaths]]
         Value = 2
         Path = "2"

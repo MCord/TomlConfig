@@ -1,6 +1,7 @@
 ﻿namespace TomlConfig
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
@@ -167,23 +168,42 @@
 
         private object ConvertValueArray(IEnumerable<TomlObject> items, Type targetType)
         {
-            var elementType = targetType.GetElementType();
 
-            if (elementType == null)
+            if (targetType.IsArray)
+
             {
-                var join = string.Join(",", items.Select(x => x.ToString()));
+                var elementType = targetType.GetElementType();
 
-                throw new TomlConfigurationException($"array value [{join}] can not be cast to type {targetType}" +
-                                                     " because it's not an array.");
+                if (elementType == null)
+                {
+                    var join = string.Join(",", items.Select(x => x.ToString()));
+
+                    throw new TomlConfigurationException($"array value [{join}] can not be cast to type {targetType}" +
+                                                         " because it's not an array.");
+                }
+
+                var converted = items
+                    .Select(x => ConvertToType(elementType, x, null)).ToArray();
+                var result = Array.CreateInstance(elementType, converted.Length);
+                converted.CopyTo(result, 0);
+                return result;
             }
 
-            var converted = items
-                .Select(x => ConvertToType(elementType, x, null)).ToArray();
+            if (targetType.IsGenericType && targetType.GetGenericTypeDefinition() == typeof(List<>))
+            {
+                var result = (IList)Activator.CreateInstance(targetType);
 
-            var result = Array.CreateInstance(elementType, converted.Length);
-
-            converted.CopyTo(result, 0);
-            return result;
+                foreach (var converted in items.Select(x => ConvertToType(targetType.GetGenericArguments()[0], x, null)))
+                {
+                    result.Add(converted);
+                }
+                
+                return result;
+            }
+            
+            throw new TomlConfigurationException(
+                $"Conversion from toml array to {targetType.FullName} is not supported. " +
+                $"Please use an array or a generic List.");
         }
     }
 }
