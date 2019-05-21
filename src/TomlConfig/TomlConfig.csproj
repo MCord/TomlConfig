@@ -3,12 +3,20 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <LangVersion>latest</LangVersion>
+    <PackageVersion>0.8.0</PackageVersion>
+    <Authors>Mehran KORDI</Authors>
+    <Description>A Library for managing application configurtion in TOML file format.</Description>
+    <Copyright>2019 Mehran KORDI</Copyright>
+    <PackageProjectUrl>https://github.com/MCord/TomlConfig</PackageProjectUrl>
+    <PackageLicenseUrl></PackageLicenseUrl>
+    <RepositoryUrl>https://github.com/MCord/TomlConfig</RepositoryUrl>
+    <PackageTags>toml config secret secret-management</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="JetBrains.Annotations" Version="2019.1.1" />
     <PackageReference Include="Microsoft.AspNetCore.Cryptography.KeyDerivation" Version="2.2.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.1.0-beta3-final" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.0.0" />
     <PackageReference Include="System.Runtime.Loader" Version="4.3.0" />
     <PackageReference Include="Tomlyn" Version="0.1.1" />
   </ItemGroup>

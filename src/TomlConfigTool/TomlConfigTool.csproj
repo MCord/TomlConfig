@@ -6,6 +6,11 @@
 
         <PackAsTool>true</PackAsTool>
         <ToolCommandName>toml-config-tool</ToolCommandName>
+        <Title>TomlConfig management tool</Title>
+        <Authors>Mehran KORDI</Authors>
+        <Description>This tool manages secret encryption in Toml config files.</Description>
+        <PackageTags>toml secret secret-management</PackageTags>
+        <PackageVersion>0.8.0</PackageVersion>
     </PropertyGroup>
 
     <ItemGroup>
