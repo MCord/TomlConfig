@@ -49,7 +49,7 @@ namespace Test
         [Fact]
         public void ShouldInheritNonSpecifiedValuesFromParent()
         {
-            var subject = CascadingConfig.Read<SampleConfig>(Resources.Load("cascading-sample.toml"));
+            var subject = TomlConfig.Read<SampleConfig>(Resources.Load("cascading-sample.toml"));
             Check.That(subject.Site.Select(x=>x.CopyRight).Distinct())
                 .IsEquivalentTo("ACME LTD.");
         }
@@ -57,7 +57,7 @@ namespace Test
         [Fact]
         public void ShouldReadConfigWithOneDimension()
         {
-            var subject = CascadingConfig.Read<SampleConfig>(Resources.Load("cascading-sample.toml"));
+            var subject = TomlConfig.Read<SampleConfig>(Resources.Load("cascading-sample.toml"));
 
             var root = subject;
 
@@ -92,7 +92,7 @@ namespace Test
         public void ShouldReadConfigWith3Levels()
         {
             var data = Resources.Load("sample-3-levels.toml");
-            var subject = CascadingConfig.Read<SampleConfigWithTowLevelDimension>(data);
+            var subject = TomlConfig.Read<SampleConfigWithTowLevelDimension>(data);
             var root = subject;
 
             Check.That(root.Host).IsEqualTo("www.default.com");
@@ -137,13 +137,13 @@ namespace Test
         {
             var data = Resources.Load("multi-level.toml");
             var over = "overridden";
-            var subject = CascadingConfig.Read<MultiLevelConfig>(data, new Dictionary<string, string>()
+            var subject = TomlConfig.Read<MultiLevelConfig>(data, new Dictionary<string, string>()
             {
                 {"Value", "42"},
                 {"Path", over}
             });
 
-            foreach (var entry in CascadingConfig.GetAllConfigEntries(subject, x=> x.SubPaths))
+            foreach (var entry in TomlConfig.GetAllConfigEntries(subject, x=> x.SubPaths))
             {
                 Check.That(entry.Value).IsEqualTo(42);
                 Check.That(entry.Path).IsEqualTo(over);
