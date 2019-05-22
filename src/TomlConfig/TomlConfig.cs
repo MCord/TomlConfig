@@ -8,6 +8,7 @@ namespace TomlConfig
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Text;
     using Tomlyn;
     using Tomlyn.Syntax;
 
@@ -51,12 +52,18 @@ namespace TomlConfig
                 yield return sub;
             }
         }
+
+        public static T Read<T>(string data, Dictionary<string, string> overrides = null, SecretKeeper keeper = null) 
+            where T : class
+        {
+            return Read<T>(new MemoryStream(Encoding.UTF8.GetBytes(data)), overrides, keeper);
+        }
         
-        public static T Read<T>(Stream data, Dictionary<string, string> overrides = null) 
+        public static T Read<T>(Stream data, Dictionary<string, string> overrides = null, SecretKeeper keeper = null) 
             where T : class
         {
             var tc = new TomlConfigReader();
-            tc.AddTypeConverter(new PasswordTypeConverter(new SecretKeeper()));
+            tc.AddTypeConverter(new PasswordTypeConverter(keeper ?? new SecretKeeper()));
             var stack = new Stack<T>();
 
             tc.OnTableParsingStarted += (i, table, @default) =>

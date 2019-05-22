@@ -149,5 +149,24 @@ namespace Test
                 Check.That(entry.Path).IsEqualTo(over);
             }
         }
+
+        public class ConfigWithSecret
+        {
+            [Secret]
+            public string Password { get; set; }
+        }
+        
+        [Fact]
+        public void ShouldDecryptSecretWhenLoading()
+        {
+            var keeper = new SecretKeeper(() => "KEY");
+            var encrypted = keeper.Encrypt("42");
+            var data = $"Password = \"{encrypted}\"";
+            
+            Check.That(TomlConfig.Read<ConfigWithSecret>(data, keeper: keeper).Password)
+                .IsEqualTo("42");
+
+        }
+
     }
 }
