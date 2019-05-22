@@ -31,7 +31,8 @@ namespace Test
                 public string[] Rights { get; set; }
             }
         }
-
+        
+        [UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
         public class SampleConfigWithTowLevelDimension
         {
             public string Host { get; set; }
@@ -99,22 +100,21 @@ namespace Test
             Check.That(root.Path).IsEqualTo("/");
             Check.That(root.FileType).IsEqualTo("html");
 
-            var subdomain1 = subject.Hosts.Single(x=> x.Host == "www.site1.com");
-            Check.That(subdomain1.Path).IsEqualTo("/");
-            Check.That(subdomain1.FileType).IsEqualTo("java");
+            var subDomain = subject.Hosts.Single(x=> x.Host == "www.site1.com");
+            Check.That(subDomain.Path).IsEqualTo("/");
+            Check.That(subDomain.FileType).IsEqualTo("java");
 
-            var subdomain1PhpPath = subdomain1.Paths.Single(x => x.Path == "/site1/php");
+            var subDomainPhpPath = subDomain.Paths.Single(x => x.Path == "/site1/php");
             
-            Check.That(subdomain1PhpPath.Host).IsEqualTo(subdomain1.Host);
-            Check.That(subdomain1PhpPath.Path).IsEqualTo("/site1/php");
-            Check.That(subdomain1PhpPath.FileType).IsEqualTo("php");
+            Check.That(subDomainPhpPath.Host).IsEqualTo(subDomain.Host);
+            Check.That(subDomainPhpPath.Path).IsEqualTo("/site1/php");
+            Check.That(subDomainPhpPath.FileType).IsEqualTo("php");
             
-            var subDomainHostPath2Value = "/site1/java";
-            var subdomain1PhpPath2 = subdomain1.Paths.Single(x => x.Path == "/site1/java");
+            var subDomainJavaPath = subDomain.Paths.Single(x => x.Path == "/site1/java");
             
-            Check.That(subdomain1PhpPath2.Host).IsEqualTo(subdomain1.Host);
-            Check.That(subdomain1PhpPath2.Path).IsEqualTo("/site1/java");
-            Check.That(subdomain1PhpPath2.FileType).IsEqualTo("java");
+            Check.That(subDomainJavaPath.Host).IsEqualTo(subDomain.Host);
+            Check.That(subDomainJavaPath.Path).IsEqualTo("/site1/java");
+            Check.That(subDomainJavaPath.FileType).IsEqualTo("java");
 
 
             var subDomain2Path2 = subject.Hosts.Single(x=> x.Host == "www.site2.com")
@@ -149,7 +149,8 @@ namespace Test
                 Check.That(entry.Path).IsEqualTo(over);
             }
         }
-
+        
+        [UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
         public class ConfigWithSecret
         {
             [Secret]
