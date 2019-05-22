@@ -14,8 +14,6 @@ namespace TomlConfig
 
     public static class TomlConfig
     {
-        public static T Read<T>(Stream data) => new TomlConfigReader().Read<T>(data);
-        public static object Read(Type type,Stream data) => new TomlConfigReader().Read(type, data);
         public static T ReadWithDefault<T>(Stream data, T @default) => new TomlConfigReader().ReadWithDefault(data,@default);
         public static DocumentSyntax ReadTable(string file) => Toml.Parse(File.ReadAllBytes(file), file);
 
@@ -68,29 +66,22 @@ namespace TomlConfig
 
             tc.OnTableParsingStarted += (i, table, @default) =>
             {
-                var t = i as T;
-                if (t == null)
+                if (i is T t)
                 {
-                    return @default;
+                    var newDefault = stack.Count > 0 ? stack.Peek() : @default;
+                    stack.Push(t);
+                    return newDefault;
                 }
 
-
-                var newDefault = stack.Count > 0 ? stack.Peek() : @default;
-
-                stack.Push(t);
-
-                return newDefault;
+                return @default;
             };
 
             tc.OnTableParsingFinished += (o, table) =>
             {
-                var t = o as T;
-                if (t == null)
+                if (o is T)
                 {
-                    return;
+                    stack.Pop();
                 }
-
-                stack.Pop();
             };
             var instance = (T) tc.ReadWithDefault(typeof(T), data, null);
             
