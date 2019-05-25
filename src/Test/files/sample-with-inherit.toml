@@ -1,0 +1,13 @@
+﻿# This is a sample file that demonstrates configuration features.
+
+#inherit ./sample.toml
+
+Value = "Simple2 Value"
+
+[[Account]]
+UserName = "root"
+IsAdmin = true
+
+[[Account]]
+UserName = "guest"
+IsAdmin = false

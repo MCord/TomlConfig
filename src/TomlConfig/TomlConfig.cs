@@ -62,10 +62,10 @@ namespace TomlConfig
         public static T Read<T>(Stream data, Dictionary<string, string> overrides = null, SecretKeeper keeper = null)
             where T : class
         {
-            return Read<T>(data, new TomlConfigSettings()
+            return Read<T>(data, new TomlConfigSettings
             {
                 Overrides = overrides,
-                CustomTypeConverters = new List<ITypeConverter>()
+                CustomTypeConverters = new List<ITypeConverter>
                 {
                     new PasswordTypeConverter(keeper ?? SecretKeeper.Default)
                 }
@@ -75,34 +75,9 @@ namespace TomlConfig
         public static T Read<T>(Stream data, TomlConfigSettings settings)
             where T : class
         {
-            settings = settings ?? TomlConfigSettings.Default;
-
-            var tc = new TomlConfigReader(settings);
-
-            var stack = new Stack<T>();
-
-            tc.OnTableParsingStarted += (i, table, @default) =>
-            {
-                if (i is T t)
-                {
-                    var newDefault = stack.Count > 0 ? stack.Peek() : @default;
-                    stack.Push(t);
-                    return newDefault;
-                }
-
-                return @default;
-            };
-
-            tc.OnTableParsingFinished += (o, table) =>
-            {
-                if (o is T)
-                {
-                    stack.Pop();
-                }
-            };
+            var tc = new TomlConfigReader(settings ?? TomlConfigSettings.Default);
             var instance = (T) tc.ReadWithDefault(typeof(T), data, null);
-
-            return (T) instance.WithOverrides<T>(settings.Overrides);
+            return (T) instance.WithOverrides<T>(settings?.Overrides);
         }
 
         public static IEnumerable<T> GetAllConfigEntries<T>(T instance, Func<T, IEnumerable<T>> selector)

@@ -117,7 +117,9 @@ namespace Test
                 }
             });
 
-            var instance = reader.Read<CustomConversionConfig>(Resources.Load("missmatched-type.toml"));
+            var instance = reader.Read<CustomConversionConfig>(Resources.Load("missmatched-type.toml"), 
+                "missmatched-type.toml");
+            
             Check.That(instance.MagicValue).IsEqualTo(42);
         }
 
@@ -180,5 +182,10 @@ namespace Test
             Check.That(total).IsEqualTo(6);
         }
 
+        [Fact]
+        public void ShouldInheritUsingDirective()
+        {
+//            TomlConfig.Read<SampleConfig>();
+        }
     }
 }
