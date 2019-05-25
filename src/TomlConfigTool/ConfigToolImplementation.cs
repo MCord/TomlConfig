@@ -123,7 +123,7 @@ namespace TomlConfigTool
 
         private bool EncryptValue(string value, out string cypherValue)
         {
-            var secretKeeper = new SecretKeeper(() => masterKey);
+            var secretKeeper = new SecretKeeper(masterKey);
 
             if (secretKeeper.IsValidCypher(value, out var thumb, out _))
             {
@@ -138,7 +138,7 @@ namespace TomlConfigTool
         
         private bool DecryptValue(string cypherValue, out string clearValue)
         {
-            var secretKeeper = new SecretKeeper(() => masterKey);
+            var secretKeeper = new SecretKeeper(masterKey);
 
             if (secretKeeper.IsValidCypher(cypherValue, out var thumb, out _))
             {
@@ -228,7 +228,7 @@ namespace TomlConfigTool
 
         private void VerifyValue(string cypherValue, string keyName)
         {
-            var secretKeeper = new SecretKeeper(() => masterKey);
+            var secretKeeper = new SecretKeeper(masterKey);
 
             try
             {

@@ -30,7 +30,7 @@ namespace Test
 
             var table = TomlConfig.ReadTable(file);
 
-            var keeper = new SecretKeeper(() => key);
+            var keeper = new SecretKeeper(key);
 
             Check.That(keeper.Decrypt(table.ToModel()["MyPassword"].ToString()))
                 .IsEqualTo("ABC");

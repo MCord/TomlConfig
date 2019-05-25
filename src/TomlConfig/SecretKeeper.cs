@@ -9,12 +9,9 @@ namespace TomlConfig
     {
         private readonly string key;
 
-        public SecretKeeper(Func<string> keyProvider = null)
+        public SecretKeeper(string key)
         {
-            key = keyProvider?.Invoke()
-                  ?? (Environment.GetEnvironmentVariable("MASTER_KEY") ??
-                                            throw new TomlConfigurationException(
-                                                "No master key provided in environment variable 'MASTER_KEY'"));
+            this.key = key;
         }
 
         public string Encrypt(string secret)
@@ -83,13 +80,6 @@ namespace TomlConfig
             return true;
         }
 
-        private static void ThrowThumbnailMismatch(byte[] expected, byte[] actual)
-        {
-            throw new TomlConfigurationException(
-                $"Provided master key with thumbnail {Security.ToHexString(expected)} does not match the master key with which" +
-                $" the secret was encrypted (thumbnail {Security.ToHexString(actual)})");
-        }
-
         public bool IsValidCypher(string value, out byte[] thumbnail, out byte[] cypher)
         {
             thumbnail = null;
@@ -123,6 +113,14 @@ namespace TomlConfig
             }
 
             return true;
+        }
+        public static readonly SecretKeeper Default = new SecretKeeper(GetMasterKey());
+        
+        private static string GetMasterKey()
+        {
+            return Environment.GetEnvironmentVariable("MASTER_KEY") ??
+                   throw new TomlConfigurationException(
+                       $"No master key provided in environment variable 'MASTER_KEY'");
         }
     }
 }

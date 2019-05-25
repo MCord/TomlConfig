@@ -14,7 +14,9 @@ namespace TomlConfig
 
     public static class TomlConfig
     {
-        public static T ReadWithDefault<T>(Stream data, T @default) => new TomlConfigReader().ReadWithDefault(data,@default);
+        public static T ReadWithDefault<T>(Stream data, T @default)
+            => new TomlConfigReader(TomlConfigSettings.Default).ReadWithDefault(data, @default);
+
         public static DocumentSyntax ReadTable(string file) => Toml.Parse(File.ReadAllBytes(file), file);
 
         public static void WriteDocument(string file, DocumentSyntax doc)
@@ -44,24 +46,39 @@ namespace TomlConfig
             {
                 yield return item;
             }
-            
+
             foreach (var sub in table.Items.OfType<TableSyntax>().SelectMany(GetAllKeys))
             {
                 yield return sub;
             }
         }
 
-        public static T Read<T>(string data, Dictionary<string, string> overrides = null, SecretKeeper keeper = null) 
+        public static T Read<T>(string data, Dictionary<string, string> overrides = null, SecretKeeper keeper = null)
             where T : class
         {
             return Read<T>(new MemoryStream(Encoding.UTF8.GetBytes(data)), overrides, keeper);
         }
-        
-        public static T Read<T>(Stream data, Dictionary<string, string> overrides = null, SecretKeeper keeper = null) 
+
+        public static T Read<T>(Stream data, Dictionary<string, string> overrides = null, SecretKeeper keeper = null)
             where T : class
         {
-            var tc = new TomlConfigReader();
-            tc.AddTypeConverter(new PasswordTypeConverter(keeper ?? new SecretKeeper()));
+            return Read<T>(data, new TomlConfigSettings()
+            {
+                Overrides = overrides,
+                CustomTypeConverters = new List<ITypeConverter>()
+                {
+                    new PasswordTypeConverter(keeper ?? SecretKeeper.Default)
+                }
+            });
+        }
+
+        public static T Read<T>(Stream data, TomlConfigSettings settings)
+            where T : class
+        {
+            settings = settings ?? TomlConfigSettings.Default;
+
+            var tc = new TomlConfigReader(settings);
+
             var stack = new Stack<T>();
 
             tc.OnTableParsingStarted += (i, table, @default) =>
@@ -84,50 +101,11 @@ namespace TomlConfig
                 }
             };
             var instance = (T) tc.ReadWithDefault(typeof(T), data, null);
-            
-            SetOverrides<T>(instance, overrides);
 
-            return instance;
+            return (T) instance.WithOverrides<T>(settings.Overrides);
         }
 
-        private static void SetOverrides<T>(object instance, Dictionary<string,string> overrides)
-        {
-            if (overrides == null || instance == null)
-            {
-                return;
-            }
-            
-            foreach (var (property, value) in instance
-                .GetType()
-                .GetProperties()
-                .Select(p=> (p,p.GetValue(instance)))
-                .Where(v=> v.Item2 != null))
-            {
-                
-                if (value is T)
-                {
-                    SetOverrides<T>(value, overrides);
-                    continue;
-                }
-
-                if (value is IEnumerable<T> enumerable)
-                {
-                    foreach (var eValue in enumerable)
-                    {
-                        SetOverrides<T>(eValue, overrides);
-                    }
-
-                    continue;
-                }
-                
-                if (overrides.TryGetValue(property.Name, out var overrideValue))
-                {
-                    property.SetValue(instance, Convert.ChangeType(overrideValue, property.PropertyType));
-                }
-            }
-        }
-        
-        public static IEnumerable<T> GetAllConfigEntries<T>(T instance, Func<T,IEnumerable<T>> selector)
+        public static IEnumerable<T> GetAllConfigEntries<T>(T instance, Func<T, IEnumerable<T>> selector)
         {
             yield return instance;
             var subs = selector(instance);
@@ -136,8 +114,8 @@ namespace TomlConfig
             {
                 yield break;
             }
-            
-            foreach (var sub in subs.SelectMany(x=> GetAllConfigEntries(x, selector)))
+
+            foreach (var sub in subs.SelectMany(x => GetAllConfigEntries(x, selector)))
             {
                 yield return sub;
             }

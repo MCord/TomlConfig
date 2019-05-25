@@ -160,7 +160,7 @@ namespace Test
         [Fact]
         public void ShouldDecryptSecretWhenLoading()
         {
-            var keeper = new SecretKeeper(() => "KEY");
+            var keeper = new SecretKeeper("KEY");
             var encrypted = keeper.Encrypt("42");
             var data = $"Password = \"{encrypted}\"";
             

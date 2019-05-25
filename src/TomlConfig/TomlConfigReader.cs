@@ -11,13 +11,13 @@
 
     public class TomlConfigReader
     {
-        private readonly List<ITypeConverter> converters = new List<ITypeConverter>();
+        private readonly TomlConfigSettings settings;
 
-        public void AddTypeConverter(in ITypeConverter converter)
+        public TomlConfigReader(TomlConfigSettings settings)
         {
-            converters.Add(converter);
+            this.settings = settings;
         }
-        
+
         /// <summary>
         ///     This delegate is called when the object is hydrated.
         ///     <param>The first param is the object after values are set.</param>
@@ -155,7 +155,7 @@
 
         private object Convert(object value, Type t, PropertyInfo propInfo)
         {
-            foreach (var cnv in converters)
+            foreach (var cnv in settings.CustomTypeConverters)
             {
                 if (cnv.CanConvert(t, propInfo))
                 {

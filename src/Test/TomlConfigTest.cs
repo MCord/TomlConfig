@@ -1,6 +1,7 @@
 namespace Test
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Linq;
     using System.Text;
@@ -65,7 +66,6 @@ namespace Test
                 .Contains("MagicValue");
         }
 
-
         [Fact]
         public void ShouldReadStreamToObject()
         {
@@ -112,10 +112,15 @@ namespace Test
         [Fact]
         public void ShouldUseCustomConversion()
         {
-            var reader = new TomlConfigReader();
-            reader.AddTypeConverter(TypeConverter.From((type, o) => 42));
-            var instance = reader.Read<CustomConversionConfig>(Resources.Load("missmatched-type.toml"));
+            var reader = new TomlConfigReader(new TomlConfigSettings()
+            {
+                CustomTypeConverters = new List<ITypeConverter>()
+                {
+                    TypeConverter.From((type, o) => 42)
+                }
+            });
 
+            var instance = reader.Read<CustomConversionConfig>(Resources.Load("missmatched-type.toml"));
             Check.That(instance.MagicValue).IsEqualTo(42);
         }
 
@@ -128,21 +133,47 @@ namespace Test
         [Fact]
         public void ShouldDecryptSecrets()
         {
-            var reader = new TomlConfigReader();
             var key = Security.GenerateKeyAsString();
             
-            var secretKeeper = new SecretKeeper(() => key);
-            reader.AddTypeConverter(new PasswordTypeConverter(secretKeeper));
+            var secretKeeper = new SecretKeeper(key);
 
             var secret = "MyVerySecretPassword";
             
             var data = $"MyPassword = \"{secretKeeper.Encrypt(secret)}\"";
             
-            var instance = reader.Read<ConfigWithSecret>(new MemoryStream(Encoding.UTF8.GetBytes(data)));
+            var instance = TomlConfig.Read<ConfigWithSecret>(data, keeper: secretKeeper);
 
             Check.That(instance.MyPassword)
                 .IsEqualTo(secret);
         }
+        
+        [Fact]
+        public void ShouldFailIfPasswordIsInvalid()
+        {
+            var key = Security.GenerateKeyAsString();
+            var secretKeeper = new SecretKeeper(key);
+
+            var data = $"MyPassword = \"BAD VALUE\"";
+            
+            Check.ThatCode(() => TomlConfig.Read<ConfigWithSecret>(data, keeper: secretKeeper))
+                .Throws<TomlConfigurationException>()
+                .AndWhichMessage().Contains("BAD VALUE");
+        }
+
+        [Fact]
+        public void ShouldNotFailIfPasswordIsNotSpecified()
+        {
+            var key = Security.GenerateKeyAsString();
+            var secretKeeper = new SecretKeeper(key);
+
+            var data = $"MyPassword = \"\"";
+            
+            var instance = TomlConfig.Read<ConfigWithSecret>(data, keeper: secretKeeper);
+
+            Check.That(instance.MyPassword)
+                .IsEmpty();
+        }
+
 
         [Fact]
         public void ShouldGetAllChildren()
