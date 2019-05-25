@@ -49,6 +49,12 @@
                 {"h|help", "show this message and exit", h => help = h != null},
             };
 
+            if (help)
+            {
+                ShowHelp(options);
+                return 0;
+            }
+            
             try
             {
                 var extra = options.Parse(args);

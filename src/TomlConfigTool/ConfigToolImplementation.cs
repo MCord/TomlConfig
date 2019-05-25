@@ -223,7 +223,7 @@ namespace TomlConfigTool
                 throw new TomlConfigurationException(
                     $"Error while verifying '{Path.GetRelativePath(Environment.CurrentDirectory, file)}'\n\t" +
                     ex.Message);
-            };
+            }
         }
 
         private void VerifyValue(string cypherValue, string keyName)
@@ -237,7 +237,6 @@ namespace TomlConfigTool
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"Failed to decrypt {keyName} from value '{cypherValue}' Error:" + ex.Message);
-                return;
             }
         }
     }

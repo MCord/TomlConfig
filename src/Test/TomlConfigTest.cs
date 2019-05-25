@@ -2,14 +2,11 @@ namespace Test
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
     using System.Linq;
-    using System.Text;
     using NFluent;
     using NFluent.ApiChecks;
     using TomlConfig;
     using Tomlyn;
-    using Tomlyn.Syntax;
     using Xunit;
 
     public class TomlConfigTest
