@@ -5,7 +5,7 @@ LogPath = "./logs/prod"
 
 [Database]
    Server ="database.production.domain"
-   Port = 5432
+   # No value is specifed for port, the value is inherited from common.toml.
    DatabaseName ="my-application"
    User ="app"
    Password ="zJyW3NxwzmL9YGZbMnPT1OBq1abDU8x6MsiDSR39aAQqZegZnA=="

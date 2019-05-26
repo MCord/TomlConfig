@@ -51,7 +51,7 @@
                 ancestors.Push(parent);
             }
 
-            return ConvertTable(type, tomlTable.ToModel(), ancestors);
+            return ConvertTable(type, tomlTable.ToModel(), ancestors, Array.Empty<string>());
         }
 
         IEnumerable<SyntaxTrivia> GetFileTrivia(DocumentSyntax doc)
@@ -127,7 +127,7 @@
                 ancestors.Push(@default);
             }
 
-            return ConvertTable(type, tomlTable.ToModel(), ancestors);
+            return ConvertTable(type, tomlTable.ToModel(), ancestors, Array.Empty<string>());
         }
 
         /// <summary>
@@ -146,11 +146,19 @@
             return (T) ReadWithDefault(typeof(T), data, @default);
         }
 
-        private object ConvertTable(Type type, TomlTable tomlTable, Stack<object> ancestors)
+        private object ConvertTable(Type type, TomlTable tomlTable, Stack<object> ancestors, string[] path)
         {
             var instance = Activator.CreateInstance(type);
 
             var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance).ToList();
+
+            var isNewNestingLevel = !ancestors.Any() || ancestors.Last().GetType().IsAssignableFrom(type);
+
+            if (isNewNestingLevel)
+            {
+                ancestors.Push(instance);
+                path = Array.Empty<string>();
+            }
 
             foreach (var key in tomlTable.Keys)
             {
@@ -161,10 +169,8 @@
                 properties.Remove(match);
                 try
                 {
-                    ancestors.Push(instance);
-                    var convertedValue = ConvertToType(match.PropertyType, tomlTable[key], match, ancestors);
+                    var convertedValue = ConvertToType(match.PropertyType, tomlTable[key], match, ancestors, path.Append(key).ToArray());
                     match.SetValue(instance, convertedValue);
-                    ancestors.Pop();
                 }
                 catch (Exception ex)
                 {
@@ -174,40 +180,46 @@
                 }
             }
 
+            if (isNewNestingLevel)
+            {
+                ancestors.Pop();
+            }
+
             if (properties.Any())
             {
-                SetUnspecifiedPropertiesFromAncestors(type, ancestors, properties, instance);
+                SetUnspecifiedPropertiesFromAncestors(ancestors, properties, instance, path);
             }
 
             return instance;
         }
 
-        private static void SetUnspecifiedPropertiesFromAncestors(Type type, Stack<object> ancestors,
-            List<PropertyInfo> properties, object instance)
+        private static void SetUnspecifiedPropertiesFromAncestors(Stack<object> ancestors,
+            List<PropertyInfo> properties, object instance, string[] path)
         {
-            var matchingParent = ancestors.FirstOrDefault(x => x.GetType().IsAssignableFrom(type));
-
-            if (matchingParent != null)
+            foreach (var unspecifiedProperty in properties)
             {
-                foreach (var unspecifiedProperty in properties)
+                var matchingValue = ancestors
+                    .Select(a=> a.GetPropertyValueByName(path.Append(unspecifiedProperty.Name).ToArray()))
+                    .FirstOrDefault(v => v!=null);
+                if (matchingValue != null)
                 {
-                    unspecifiedProperty.SetValue(instance, unspecifiedProperty.GetValue(matchingParent));
+                    unspecifiedProperty.SetValue(instance, matchingValue);
                 }
             }
         }
 
-        private object ConvertToType(Type targetType, object value, PropertyInfo propInfo, Stack<object> ancestors)
+        private object ConvertToType(Type targetType, object value, PropertyInfo propInfo, Stack<object> ancestors, string [] path)
         {
             switch (value)
             {
                 case TomlValue v:
                     return Convert(v.ValueAsObject, targetType, propInfo);
                 case TomlArray array:
-                    return ConvertValueArray(array.GetTomlEnumerator(), targetType, ancestors);
+                    return ConvertValueArray(array.GetTomlEnumerator(), targetType, ancestors, path);
                 case TomlTableArray tableArray:
-                    return ConvertValueArray(tableArray, targetType, ancestors);
+                    return ConvertValueArray(tableArray, targetType, ancestors, path);
                 case TomlTable table:
-                    return ConvertTable(targetType, table, ancestors);
+                    return ConvertTable(targetType, table, ancestors, path);
                 default:
                     return Convert(value, targetType, propInfo);
             }
@@ -226,7 +238,7 @@
             return System.Convert.ChangeType(value, t);
         }
 
-        private object ConvertValueArray(IEnumerable<TomlObject> items, Type targetType, Stack<object> ancestors)
+        private object ConvertValueArray(IEnumerable<TomlObject> items, Type targetType, Stack<object> ancestors, string[] path)
         {
             if (targetType.IsArray)
 
@@ -242,7 +254,7 @@
                 }
 
                 var converted = items
-                    .Select(x => ConvertToType(elementType, x, null, ancestors)).ToArray();
+                    .Select((x, i) => ConvertToType(elementType, x, null, ancestors, path.Append(i.ToString()).ToArray())).ToArray();
                 var result = Array.CreateInstance(elementType, converted.Length);
                 converted.CopyTo(result, 0);
                 return result;
@@ -253,8 +265,8 @@
                 var result = (IList) Activator.CreateInstance(targetType);
                 var genericArgument = targetType.GetGenericArguments()[0];
 
-                foreach (var converted in items.Select(x => ConvertToType(genericArgument, x, null, ancestors))
-                )
+                foreach (var converted in items.Select((x,i) => 
+                    ConvertToType(genericArgument, x, null, ancestors, path.Append(i.ToString()).ToArray())))
                 {
                     result.Add(converted);
                 }

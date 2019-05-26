@@ -1,0 +1,31 @@
+{
+  "AdminUser": "root",
+  "AdminPassword": "SomePassword",
+  "Users": [
+    "root"
+  ],
+  "Path": "/",
+  "Domain": "best-ftp-hosting.com",
+  "Domains": [
+    {
+      "AdminUser": "root",
+      "AdminPassword": "SomePassword",
+      "Users": [
+        "root",
+        "john"
+      ],
+      "Path": "/some-domain-name.com/",
+      "Domain": "some-domain-name.com"
+    },
+    {
+      "AdminUser": "root",
+      "AdminPassword": "SomePassword",
+      "Users": [
+        "root",
+        "jess"
+      ],
+      "Path": "/another-domain-name.com/",
+      "Domain": "another-domain-name.com"
+    }
+  ]
+}

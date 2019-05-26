@@ -1,0 +1,9 @@
+#include common.toml
+
+Environment = "staging"
+LogPath = "./logs/staging"
+
+# All database configuration comes from common.toml except Port
+[Database]
+Port = 5555
+   

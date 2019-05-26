@@ -1,7 +1,9 @@
 namespace TomlConfiguration
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
+    using System.ComponentModel;
     using System.Linq;
 
     internal static class ObjectExtensions
@@ -42,6 +44,51 @@ namespace TomlConfiguration
                 }
             }
             return instance;
+        }
+
+        internal static object GetPropertyValueByName(this object instance, params string[] names)
+        {
+            if (instance == null)
+            {
+                return null;
+            }
+
+            if (!names.Any())
+            {
+                throw new ArgumentException("No name is specified.");
+            }
+
+            if (instance is Array a && int.TryParse(names.First(), out var index))
+            {
+                var propertyValueByName = a.GetValue(index);
+                return names.Length == 1 
+                    ? propertyValueByName : 
+                    GetPropertyValueByName(propertyValueByName, names.Skip(1).ToArray());
+            }
+            
+            if (instance is ICollection l && int.TryParse(names.First(), out var listIndex))
+            {
+                var propertyValueByName = l.Cast<object>().ToArray()[listIndex];
+                return names.Length == 1 
+                    ? propertyValueByName : 
+                    GetPropertyValueByName(propertyValueByName, names.Skip(1).ToArray());
+            }
+            
+            var type = instance.GetType();
+            var prop = type.GetProperty(names.First());
+            if (prop == null)
+            {
+                return null;
+            }
+
+            var value = prop.GetValue(instance);
+
+            if (names.Length == 1)
+            {
+                return value;
+            }
+
+            return GetPropertyValueByName(value, names.Skip(1).ToArray());
         }
     }
 }

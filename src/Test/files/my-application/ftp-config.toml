@@ -1,0 +1,22 @@
+# This section contains configuration common to all domains
+
+AdminUser = "root"
+AdminPassword = "SomePassword"
+Users = ["root"]
+Path = "/"
+Domain = "best-ftp-hosting.com"
+
+# this is the syntax to define a table in an array. Look to toml documentation for more information. Note that 
+# at child level we have not defined the AdminUser / AdminPassword but each objects in Domains List would contain
+# the values from top. 
+
+[[Domains]] 
+Domain = "some-domain-name.com"
+Users = ["root", "john"]
+Path = "/some-domain-name.com/"
+
+
+[[Domains]] 
+Domain = "another-domain-name.com"
+Users = ["root", "jess"]
+Path = "/another-domain-name.com/"

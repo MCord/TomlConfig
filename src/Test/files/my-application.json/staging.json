@@ -1,0 +1,13 @@
+{
+  "ApplicationName": "MyApplication",
+  "CopyRight": "© 2019 ACME LTD.",
+  "Environment": "staging",
+  "LogPath": "./logs/staging",
+  "Database": {
+    "Server": "localhost",
+    "Port": 5555,
+    "DatabaseName": "dev-db",
+    "User": "dev",
+    "Password": ""
+  }
+}
