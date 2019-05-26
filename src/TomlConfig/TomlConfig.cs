@@ -60,13 +60,17 @@ namespace TomlConfig
         public static T Read<T>(this TomlConfigSettings settings)
         {
             var reader = new TomlConfigReader(settings);
-            return reader.Read<T>(settings.Data.Stream, settings.Data.Path);
+            return (T) reader
+                .Read<T>(settings.Data.Stream, settings.Data.Path)
+                .WithOverrides<T>(settings.Overrides);
         }
         
         public static T ReadWithDefault<T>(this TomlConfigSettings settings, T defaultInstance)
         {
             var reader = new TomlConfigReader(settings);
-            return reader.ReadWithDefault(settings.Data.Stream, defaultInstance);
+            return (T) reader
+                .ReadWithDefault(settings.Data.Stream, defaultInstance)
+                .WithOverrides<T>(settings.Overrides);;
         }
     }
 }

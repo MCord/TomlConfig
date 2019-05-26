@@ -144,7 +144,7 @@ namespace Test
         {
             var over = "overridden";
             var subject = TomlConfig.FromStream(Resources.Load("multi-level.toml"))
-                .WithOverrides(new Dictionary<string, string>()
+                .WithOverrides(new Dictionary<string, string>
                 {
                     {"Value", "42"},
                     {"Path", over}

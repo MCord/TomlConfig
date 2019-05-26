@@ -185,7 +185,20 @@ namespace Test
         [Fact]
         public void ShouldInheritUsingDirective()
         {
-//            TomlConfig.Read<SampleConfig>();
+            var config = TomlConfig.FromFile("files/sample-with-include.toml")
+                .Read<SampleConfig>();
+
+            Check.That(config.Database)
+                .IsNotNull();
+        }
+        
+        [Fact]
+        public void ShouldFailIfBadIncludePathIsProvided()
+        {
+            Check.ThatCode(() => TomlConfig.FromFile("files/sample-with-bad-include.toml").Read<SampleConfig>())
+                .Throws<TomlConfigurationException>()
+                .AndWhichMessage()
+                .StartsWith("Missing include");
         }
     }
 }

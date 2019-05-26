@@ -1,7 +1,6 @@
-﻿# This is a sample file that demonstrates configuration features.
+﻿#include ./sample.toml
 
-#inherit ./sample.toml
-
+# This is a sample file that demonstrates configuration features.
 Value = "Simple2 Value"
 
 [[Account]]

@@ -45,32 +45,58 @@
             var parent = GetInheritInstanceFromDirective(type, tomlTable, refPath);
 
             var ancestors = new Stack<object>();
-            
+
             if (parent != null)
             {
                 ancestors.Push(parent);
             }
-            
+
             return ConvertTable(type, tomlTable.ToModel(), ancestors);
         }
 
-        private object GetInheritInstanceFromDirective(Type type, DocumentSyntax tomlTable, string refPath)
+        IEnumerable<SyntaxTrivia> GetFileTrivia(DocumentSyntax doc)
         {
-            var inherit = tomlTable.LeadingTrivia?
-                .Where(trivia => trivia.Kind == TokenKind.Comment)
-                .Where(comment => comment.ToString().StartsWith("#inherit"))
-                .Select(x => Regex.Split(x.ToString(), @"\s").LastOrDefault())
-                .ToArray();
-
-            if (inherit?.Length > 1)
+            if (doc.LeadingTrivia != null)
             {
-                throw new TomlConfigurationException("Only one inherit directive is allowed in config.");
+                foreach (var trivia in doc.LeadingTrivia)
+                {
+                    yield return trivia;
+                }
             }
 
-            if (inherit?.Length == 1)
+            foreach (var kv in doc.KeyValues.Where(x=>x.LeadingTrivia != null))
+            {
+                foreach (var trivia in kv.LeadingTrivia)
+                {
+                    yield return trivia;
+                }
+            }
+        }
+
+        private object GetInheritInstanceFromDirective(Type type, DocumentSyntax doc, string refPath)
+        {
+            var include = GetFileTrivia(doc)
+                .Where(trivia => trivia.Kind == TokenKind.Comment)
+                .Where(comment => comment.Text.StartsWith("#include"))
+                .Select(x => Regex.Split(x.Text, @"\s").LastOrDefault())
+                .ToArray();
+
+            if (include.Length > 1)
+            {
+                throw new TomlConfigurationException("Only one include directive is allowed in config.");
+            }
+
+            if (include?.Length == 1)
             {
                 var basePath = Path.GetDirectoryName(refPath) ?? ".";
-                var parentPath = Path.Combine(basePath, inherit[0]);
+                var parentPath = Path.Combine(basePath, include[0]);
+
+                if (!File.Exists(parentPath))
+                {
+                    throw new TomlConfigurationException(
+                        $"Missing include file {parentPath} included in '{refPath}'");
+                }
+                
                 using (var parentStream = File.Open(parentPath, FileMode.Open))
                 {
                     return Read(type, parentStream, parentPath);
@@ -95,12 +121,12 @@
         {
             var tomlTable = Toml.Parse(new StreamReader(data).ReadToEnd());
             var ancestors = new Stack<object>();
-            
+
             if (@default != null)
             {
                 ancestors.Push(@default);
             }
-            
+
             return ConvertTable(type, tomlTable.ToModel(), ancestors);
         }
 
@@ -160,7 +186,8 @@
             return instance;
         }
 
-        private static void SetUnspecifiedPropertiesFromAncestors(Type type, Stack<object> ancestors, List<PropertyInfo> properties, object instance)
+        private static void SetUnspecifiedPropertiesFromAncestors(Type type, Stack<object> ancestors,
+            List<PropertyInfo> properties, object instance)
         {
             var matchingParent = ancestors.FirstOrDefault(x => x.GetType().IsAssignableFrom(type));
 

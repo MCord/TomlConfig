@@ -9,6 +9,10 @@
   <ItemGroup>
     <None Remove="resources\**" />
     <EmbeddedResource Include="resources\**" />
+    
+    <None Update="files\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <ItemGroup>
