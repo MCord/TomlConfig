@@ -6,6 +6,7 @@ namespace TomlConfigTool
     using System.Linq;
     using System.Text.RegularExpressions;
     using TomlConfig;
+    using Tomlyn;
     using Tomlyn.Syntax;
 
     public class ConfigToolImplementation
@@ -55,7 +56,7 @@ namespace TomlConfigTool
         {
             try
             {
-                var table = TomlConfig.ReadTable(file);
+                var table = Toml.Parse(File.ReadAllText(file));
                 var found = 0;
                 foreach (var keyValue in GetAllProperties(table))
                 {
@@ -71,7 +72,7 @@ namespace TomlConfigTool
                 }
 
 
-                TomlConfig.WriteDocument(file, table);
+                WriteDocument(file, table);
                 return found;
             }
             catch (Exception ex)
@@ -81,12 +82,20 @@ namespace TomlConfigTool
                     ex.Message);
             }
         }
+        
+        public static void WriteDocument(string file, DocumentSyntax doc)
+        {
+            using (var writer = File.CreateText(file))
+            {
+                doc.WriteTo(writer);
+            }
+        }
 
         private int EncryptFile(string file)
         {
             try
             {
-                var table = TomlConfig.ReadTable(file);
+                var table = Toml.Parse(File.ReadAllText(file));
                 var changes = 0;
                 foreach (var keyValue in GetAllProperties(table))
                 {
@@ -99,7 +108,7 @@ namespace TomlConfigTool
                 }
 
 
-                TomlConfig.WriteDocument(file, table);
+                WriteDocument(file, table);
                 return changes;
             }
             catch (Exception ex)
@@ -198,7 +207,7 @@ namespace TomlConfigTool
         {
             try
             {
-                var table = TomlConfig.ReadTable(file);
+                var table = Toml.Parse(File.ReadAllText(file));
                 var verified = 0;
                 foreach (var keyValue in GetAllProperties(table))
                 {
@@ -215,7 +224,7 @@ namespace TomlConfigTool
                     Console.WriteLine($"No Key matched specified filters : \n {string.Join("\n", configKeyNames)}");
                 }
 
-                TomlConfig.WriteDocument(file, table);
+                WriteDocument(file, table);
                 return verified;
             }
             catch (Exception ex)

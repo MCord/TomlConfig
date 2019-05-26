@@ -50,7 +50,10 @@ namespace Test
         [Fact]
         public void ShouldInheritNonSpecifiedValuesFromParent()
         {
-            var subject = TomlConfig.Read<SampleConfig>(Resources.Load("cascading-sample.toml"));
+            var subject = TomlConfig
+                .FromStream(Resources.Load("cascading-sample.toml"))
+                .Read<SampleConfig>();
+            
             Check.That(subject.Site.Select(x=>x.CopyRight).Distinct())
                 .IsEquivalentTo("ACME LTD.");
         }
@@ -58,7 +61,9 @@ namespace Test
         [Fact]
         public void ShouldReadConfigWithOneDimension()
         {
-            var subject = TomlConfig.Read<SampleConfig>(Resources.Load("cascading-sample.toml"));
+            var subject = TomlConfig
+                .FromStream(Resources.Load("cascading-sample.toml"))
+                .Read<SampleConfig>();
 
             var root = subject;
 
@@ -92,8 +97,10 @@ namespace Test
         [Fact]
         public void ShouldReadConfigWith3Levels()
         {
-            var data = Resources.Load("sample-3-levels.toml");
-            var subject = TomlConfig.Read<SampleConfigWithTowLevelDimension>(data);
+            var subject = TomlConfig
+                .FromStream(Resources.Load("sample-3-levels.toml"))
+                .Read<SampleConfigWithTowLevelDimension>();
+            
             var root = subject;
 
             Check.That(root.Host).IsEqualTo("www.default.com");
@@ -135,15 +142,16 @@ namespace Test
         [Fact]
         public void ShouldOverrideProperties()
         {
-            var data = Resources.Load("multi-level.toml");
             var over = "overridden";
-            var subject = TomlConfig.Read<MultiLevelConfig>(data, new Dictionary<string, string>()
-            {
-                {"Value", "42"},
-                {"Path", over}
-            });
+            var subject = TomlConfig.FromStream(Resources.Load("multi-level.toml"))
+                .WithOverrides(new Dictionary<string, string>()
+                {
+                    {"Value", "42"},
+                    {"Path", over}
+                })
+                .Read<MultiLevelConfig>();
 
-            foreach (var entry in TomlConfig.GetAllConfigEntries(subject, x=> x.SubPaths))
+            foreach (var entry in subject.GetAllConfigEntries(x=> x.SubPaths))
             {
                 Check.That(entry.Value).IsEqualTo(42);
                 Check.That(entry.Path).IsEqualTo(over);
@@ -161,13 +169,13 @@ namespace Test
         public void ShouldDecryptSecretWhenLoading()
         {
             var keeper = new SecretKeeper("KEY");
-            var encrypted = keeper.Encrypt("42");
-            var data = $"Password = \"{encrypted}\"";
+
+            var instance = TomlConfig
+                .FromString($"Password = \"{keeper.Encrypt("42")}\"")
+                .WithMasterKey("KEY")
+                .Read<ConfigWithSecret>();
             
-            Check.That(TomlConfig.Read<ConfigWithSecret>(data, keeper: keeper).Password)
-                .IsEqualTo("42");
-
+            Check.That(instance.Password).IsEqualTo("42");
         }
-
     }
 }

@@ -28,7 +28,7 @@ namespace Test
             
             subject.Encrypt();
 
-            var table = TomlConfig.ReadTable(file);
+            var table = Toml.Parse(File.ReadAllText(file));
 
             var keeper = new SecretKeeper(key);
 

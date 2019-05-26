@@ -1,99 +1,72 @@
-using System.Runtime.CompilerServices;
-
-[assembly: InternalsVisibleTo("Test")]
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Test")]
 
 namespace TomlConfig
 {
-    using System;
     using System.Collections.Generic;
     using System.IO;
-    using System.Linq;
     using System.Text;
-    using Tomlyn;
-    using Tomlyn.Syntax;
 
     public static class TomlConfig
     {
-        public static T ReadWithDefault<T>(Stream data, T @default)
-            => new TomlConfigReader(TomlConfigSettings.Default).ReadWithDefault(data, @default);
-
-        public static DocumentSyntax ReadTable(string file) => Toml.Parse(File.ReadAllBytes(file), file);
-
-        public static void WriteDocument(string file, DocumentSyntax doc)
+        public static TomlConfigSettings FromStream(Stream data, string pathHint = null)
         {
-            using (var writer = File.CreateText(file))
-            {
-                doc.WriteTo(writer);
-            }
+            var tomlConfigSettings = TomlConfigSettings.Default;
+            tomlConfigSettings.Data = new NamedStream(pathHint, data);
+            return tomlConfigSettings;
+        }
+        
+        public static TomlConfigSettings FromString(string data, string pathHint = null)
+        {
+            var tomlConfigSettings = TomlConfigSettings.Default;
+            tomlConfigSettings.Data = new NamedStream(pathHint, new MemoryStream(Encoding. UTF8.GetBytes(data)));
+            return tomlConfigSettings;
+        }
+        
+        public static TomlConfigSettings FromFile(string filePath)
+        {
+            var tomlConfigSettings = TomlConfigSettings.Default;
+            tomlConfigSettings.Data = new NamedStream(filePath, File.Open(filePath, FileMode.Open));
+            return tomlConfigSettings;
         }
 
-        public static IEnumerable<KeyValueSyntax> GetAllKeys(this DocumentSyntax document)
+        public static TomlConfigSettings WithCustomTypeConverter(this TomlConfigSettings settings,
+            ITypeConverter converter)
         {
-            foreach (var value in document.KeyValues)
-            {
-                yield return value;
-            }
-
-            foreach (var value in document.Tables.SelectMany(GetAllKeys))
-            {
-                yield return value;
-            }
+            settings.CustomTypeConverters.Add(converter);
+            return settings;
+        }
+        
+        public static TomlConfigSettings WithMasterKey(this TomlConfigSettings settings,
+            string masterKey)
+        {
+            settings.CustomTypeConverters.Insert(0, new PasswordTypeConverter(new SecretKeeper(masterKey)));
+            return settings;
+        }
+        
+        public static TomlConfigSettings WithOverrides(this TomlConfigSettings settings,
+            Dictionary<string, string> overrides)
+        {
+            settings.Overrides = overrides;
+            return settings;
+        }
+        
+        public static TomlConfigSettings WithOverride(this TomlConfigSettings settings,
+            string propertyName, string value)
+        {
+            settings.Overrides[propertyName] = value;
+            return settings;
         }
 
-        private static IEnumerable<KeyValueSyntax> GetAllKeys(TableSyntaxBase table)
+        public static T Read<T>(this TomlConfigSettings settings)
         {
-            foreach (var item in table.Items)
-            {
-                yield return item;
-            }
-
-            foreach (var sub in table.Items.OfType<TableSyntax>().SelectMany(GetAllKeys))
-            {
-                yield return sub;
-            }
+            var reader = new TomlConfigReader(settings);
+            return reader.Read<T>(settings.Data.Stream, settings.Data.Path);
         }
-
-        public static T Read<T>(string data, Dictionary<string, string> overrides = null, SecretKeeper keeper = null)
-            where T : class
+        
+        public static T ReadWithDefault<T>(this TomlConfigSettings settings, T defaultInstance)
         {
-            return Read<T>(new MemoryStream(Encoding.UTF8.GetBytes(data)), overrides, keeper);
-        }
-
-        public static T Read<T>(Stream data, Dictionary<string, string> overrides = null, SecretKeeper keeper = null)
-            where T : class
-        {
-            return Read<T>(data, new TomlConfigSettings
-            {
-                Overrides = overrides,
-                CustomTypeConverters = new List<ITypeConverter>
-                {
-                    new PasswordTypeConverter(keeper ?? SecretKeeper.Default)
-                }
-            });
-        }
-
-        public static T Read<T>(Stream data, TomlConfigSettings settings)
-            where T : class
-        {
-            var tc = new TomlConfigReader(settings ?? TomlConfigSettings.Default);
-            var instance = (T) tc.ReadWithDefault(typeof(T), data, null);
-            return (T) instance.WithOverrides<T>(settings?.Overrides);
-        }
-
-        public static IEnumerable<T> GetAllConfigEntries<T>(T instance, Func<T, IEnumerable<T>> selector)
-        {
-            yield return instance;
-            var subs = selector(instance);
-
-            if (subs == null)
-            {
-                yield break;
-            }
-
-            foreach (var sub in subs.SelectMany(x => GetAllConfigEntries(x, selector)))
-            {
-                yield return sub;
-            }
+            var reader = new TomlConfigReader(settings);
+            return reader.ReadWithDefault(settings.Data.Stream, defaultInstance);
         }
     }
 }

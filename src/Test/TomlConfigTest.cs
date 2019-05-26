@@ -49,7 +49,7 @@ namespace Test
         [Fact]
         public void ArrayValuesCanNotBeAssignedToNonArrayProperties()
         {
-            Check.ThatCode(() => TomlConfig.Read<ArrayTestConfig>(Resources.Load("array-type-mismatch.toml")))
+            Check.ThatCode(() => TomlConfig.FromStream(Resources.Load("array-type-mismatch.toml")).Read<ArrayTestConfig>())
                 .Throws<TomlConfigurationException>()
                 .AndWhichMessage()
                 .Contains("System.Int32");
@@ -58,7 +58,7 @@ namespace Test
         [Fact]
         public void ShouldFailWithExpectedErrorIfFieldIsMissingOnTheType()
         {
-            Check.ThatCode(() => TomlConfig.Read<SampleConfig>(Resources.Load("missing-field.toml")))
+            Check.ThatCode(() => TomlConfig.FromStream(Resources.Load("missing-field.toml")).Read<SampleConfig>())
                 .Throws<TomlConfigurationException>().AndWhichMessage()
                 .Contains("MagicValue");
         }
@@ -66,7 +66,9 @@ namespace Test
         [Fact]
         public void ShouldReadStreamToObject()
         {
-            var instance = TomlConfig.Read<SampleConfig>(Resources.Load("read.toml"));
+            var instance = TomlConfig
+                .FromStream(Resources.Load("read.toml"))
+                .Read<SampleConfig>();
 
             Check.That(instance.Value).IsEqualTo("Simple Value");
             Check.That(instance.IntValue).IsEqualTo(42);
@@ -94,7 +96,10 @@ namespace Test
             {
                 PiValue = 3.14159254f
             };
-            var objectInstance = TomlConfig.ReadWithDefault(Resources.Load("read.toml"), @default);
+
+            var objectInstance = TomlConfig
+                .FromStream(Resources.Load("read.toml"))
+                .ReadWithDefault(@default);
 
             Check.That(objectInstance.PiValue)
                 .IsEqualTo(@default.PiValue);
@@ -104,8 +109,8 @@ namespace Test
         {
             public int MagicValue { get; set; }
         }
-        
-        
+
+
         [Fact]
         public void ShouldUseCustomConversion()
         {
@@ -117,44 +122,41 @@ namespace Test
                 }
             });
 
-            var instance = reader.Read<CustomConversionConfig>(Resources.Load("missmatched-type.toml"), 
+            var instance = reader.Read<CustomConversionConfig>(Resources.Load("missmatched-type.toml"),
                 "missmatched-type.toml");
-            
+
             Check.That(instance.MagicValue).IsEqualTo(42);
         }
 
         public class ConfigWithSecret
         {
-            [Secret]
-            public string MyPassword { get; set; }
+            [Secret] public string MyPassword { get; set; }
         }
-        
+
         [Fact]
         public void ShouldDecryptSecrets()
         {
             var key = Security.GenerateKeyAsString();
-            
             var secretKeeper = new SecretKeeper(key);
-
             var secret = "MyVerySecretPassword";
-            
-            var data = $"MyPassword = \"{secretKeeper.Encrypt(secret)}\"";
-            
-            var instance = TomlConfig.Read<ConfigWithSecret>(data, keeper: secretKeeper);
+
+            var instance = TomlConfig
+                .FromString($"MyPassword = \"{secretKeeper.Encrypt(secret)}\"")
+                .WithMasterKey(key)
+                .Read<ConfigWithSecret>();
 
             Check.That(instance.MyPassword)
                 .IsEqualTo(secret);
         }
-        
+
         [Fact]
         public void ShouldFailIfPasswordIsInvalid()
         {
             var key = Security.GenerateKeyAsString();
-            var secretKeeper = new SecretKeeper(key);
 
             var data = $"MyPassword = \"BAD VALUE\"";
-            
-            Check.ThatCode(() => TomlConfig.Read<ConfigWithSecret>(data, keeper: secretKeeper))
+
+            Check.ThatCode(() => TomlConfig.FromString(data).WithMasterKey(key).Read<ConfigWithSecret>())
                 .Throws<TomlConfigurationException>()
                 .AndWhichMessage().Contains("BAD VALUE");
         }
@@ -162,12 +164,10 @@ namespace Test
         [Fact]
         public void ShouldNotFailIfPasswordIsNotSpecified()
         {
-            var key = Security.GenerateKeyAsString();
-            var secretKeeper = new SecretKeeper(key);
-
-            var data = $"MyPassword = \"\"";
-            
-            var instance = TomlConfig.Read<ConfigWithSecret>(data, keeper: secretKeeper);
+            var instance = TomlConfig
+                .FromString($"MyPassword = \"\"")
+                .WithMasterKey(Security.GenerateKeyAsString())
+                .Read<ConfigWithSecret>();
 
             Check.That(instance.MyPassword)
                 .IsEmpty();
