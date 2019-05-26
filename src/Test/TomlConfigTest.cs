@@ -181,6 +181,18 @@ namespace Test
             var total = doc.GetAllKeys().Sum(x => int.Parse(x.Value.ToString()));
             Check.That(total).IsEqualTo(6);
         }
+//
+//        [Fact]
+//        public void ShouldDeserializeToDynamic()
+//        {
+//            var instance = TomlConfig
+//                .FromString("MyPassword = \"\"")
+//                .WithMasterKey(Security.GenerateKeyAsString())
+//                .Read<dynamic>();
+//
+//            Check.That(instance.MyPassword)
+//                .IsEmpty();
+//        }
 
         [Fact]
         public void ShouldInheritUsingDirective()

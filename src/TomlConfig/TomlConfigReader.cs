@@ -146,21 +146,17 @@
             return (T) ReadWithDefault(typeof(T), data, @default);
         }
 
-        private object ConvertTable(Type t, TomlTable tomlTable, Stack<object> ancestors)
+        private object ConvertTable(Type type, TomlTable tomlTable, Stack<object> ancestors)
         {
-            var instance = Activator.CreateInstance(t);
+            var instance = Activator.CreateInstance(type);
 
-            var properties = t.GetProperties(BindingFlags.Public | BindingFlags.Instance).ToList();
+            var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance).ToList();
 
             foreach (var key in tomlTable.Keys)
             {
-                var match = properties.FirstOrDefault(x => x.Name == key);
-
-                if (match == null)
-                {
-                    throw new TomlConfigurationException(
-                        $"No public instance property named '{key}' is found on '{t.FullName}'");
-                }
+                var match = properties.FirstOrDefault(x => x.Name == key) ??
+                            throw new TomlConfigurationException(
+                                $"No public instance property named '{key}' is found on '{type.FullName}'");
 
                 properties.Remove(match);
                 try
@@ -180,7 +176,7 @@
 
             if (properties.Any())
             {
-                SetUnspecifiedPropertiesFromAncestors(t, ancestors, properties, instance);
+                SetUnspecifiedPropertiesFromAncestors(type, ancestors, properties, instance);
             }
 
             return instance;
