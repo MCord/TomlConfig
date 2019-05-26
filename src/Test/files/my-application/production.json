@@ -1,0 +1,13 @@
+{
+  "ApplicationName": "MyApplication",
+  "CopyRight": "© 2019 ACME LTD.",
+  "Environment": "production",
+  "LogPath": "./logs/prod",
+  "Database": {
+    "Server": "database.production.domain",
+    "Port": 5432,
+    "DatabaseName": "my-application",
+    "User": "app",
+    "Password": "password"
+  }
+}

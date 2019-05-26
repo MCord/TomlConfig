@@ -1,8 +1,9 @@
 namespace TomlConfiguration
 {
+    using System;
     using System.Collections.Generic;
 
-    public class TomlConfigSettings
+    public class TomlConfigSettings : IDisposable
     {
         public Dictionary<string, string> Overrides { get; set; }
         public List<ITypeConverter> CustomTypeConverters { get; set; }
@@ -15,5 +16,10 @@ namespace TomlConfiguration
                 new PasswordTypeConverter(SecretKeeper.Default)
             }
         };
+
+        public void Dispose()
+        {
+            Data?.Dispose();
+        }
     }
 }

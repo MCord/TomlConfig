@@ -1,0 +1,11 @@
+#include common.toml
+
+Environment = "production"
+LogPath = "./logs/prod"
+
+[Database]
+   Server ="database.production.domain"
+   Port = 5432
+   DatabaseName ="my-application"
+   User ="app"
+   Password ="zJyW3NxwzmL9YGZbMnPT1OBq1abDU8x6MsiDSR39aAQqZegZnA=="

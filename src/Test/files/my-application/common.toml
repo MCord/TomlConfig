@@ -6,6 +6,6 @@ LogPath = "./logs/dev"
 [Database]
    Server ="localhost"
    Port = 5432
-   DatabaseName ="dev-sb"
+   DatabaseName ="dev-db"
    User ="dev"
-   Password ="dev"
+   Password =""
