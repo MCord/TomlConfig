@@ -1,6 +1,6 @@
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Test")]
 
-namespace TomlConfig
+namespace TomlConfiguration
 {
     using System.Collections.Generic;
     using System.IO;
@@ -70,7 +70,7 @@ namespace TomlConfig
             var reader = new TomlConfigReader(settings);
             return (T) reader
                 .ReadWithDefault(settings.Data.Stream, defaultInstance)
-                .WithOverrides<T>(settings.Overrides);;
+                .WithOverrides<T>(settings.Overrides);
         }
     }
 }

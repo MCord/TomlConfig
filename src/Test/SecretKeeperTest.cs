@@ -4,7 +4,7 @@ namespace Test
     using System.Text;
     using NFluent;
     using NFluent.ApiChecks;
-    using TomlConfig;
+    using TomlConfiguration;
     using Xunit;
 
     public class SecretKeeperTest

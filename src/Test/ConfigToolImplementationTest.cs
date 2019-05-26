@@ -4,7 +4,7 @@ namespace Test
     using System.Collections.Generic;
     using System.IO;
     using NFluent;
-    using TomlConfig;
+    using TomlConfiguration;
     using TomlConfigTool;
     using Tomlyn;
     using Xunit;

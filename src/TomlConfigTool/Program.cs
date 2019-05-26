@@ -6,7 +6,7 @@
     using System.Reflection;
     using Mono.Options;
     using Test;
-    using TomlConfig;
+    using TomlConfiguration;
 
     class Program
     {

@@ -1,0 +1,11 @@
+ApplicationName = "MyApplication"
+CopyRight = "© 2019 ACME LTD."
+Environment = "dev"
+LogPath = "./logs/dev"
+
+[Database]
+   Server ="localhost"
+   Port = 5432
+   DatabaseName ="dev-sb"
+   User ="dev"
+   Password ="dev"

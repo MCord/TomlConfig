@@ -1,4 +1,4 @@
-namespace TomlConfig
+namespace TomlConfiguration
 {
     using System.Collections.Generic;
 

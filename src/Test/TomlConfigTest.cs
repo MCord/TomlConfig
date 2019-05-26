@@ -5,7 +5,7 @@ namespace Test
     using System.Linq;
     using NFluent;
     using NFluent.ApiChecks;
-    using TomlConfig;
+    using TomlConfiguration;
     using Tomlyn;
     using Xunit;
 

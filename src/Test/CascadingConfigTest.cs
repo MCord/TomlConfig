@@ -4,7 +4,7 @@ namespace Test
     using System.Linq;
     using JetBrains.Annotations;
     using NFluent;
-    using TomlConfig;
+    using TomlConfiguration;
     using Xunit;
 
     public class CascadingConfigTest

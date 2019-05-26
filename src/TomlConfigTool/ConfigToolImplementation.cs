@@ -5,7 +5,7 @@ namespace TomlConfigTool
     using System.IO;
     using System.Linq;
     using System.Text.RegularExpressions;
-    using TomlConfig;
+    using TomlConfiguration;
     using Tomlyn;
     using Tomlyn.Syntax;
 
