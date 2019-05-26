@@ -3,7 +3,6 @@ namespace TomlConfiguration
     using System;
     using System.Collections;
     using System.Collections.Generic;
-    using System.ComponentModel;
     using System.Linq;
 
     internal static class ObjectExtensions

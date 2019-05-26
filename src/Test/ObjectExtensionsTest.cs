@@ -1,12 +1,14 @@
 namespace Test
 {
     using System.Collections.Generic;
+    using JetBrains.Annotations;
     using NFluent;
     using TomlConfiguration;
     using Xunit;
 
     public class ObjectExtensionsTest
     {
+        [UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
         class Car
         {
             public int Wheels { get; set; }
@@ -14,16 +16,20 @@ namespace Test
             public List<Door> Doors { get; set; }
         }
 
+        [UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
         class Door
         {
             public bool IsOpen { get; set; }
         }
+        
+        [UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
 
         class Motor
         {
             public GearBox GearBox { get; set; }
         }
 
+        [UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
         class GearBox
         {
             public string Type { get; set; }
