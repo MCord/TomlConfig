@@ -1,11 +1,10 @@
 namespace TomlConfiguration
 {
     using System;
-    using System.Reflection;
 
     public interface ITypeConverter
     {
-        bool CanConvert(Type t, PropertyInfo info);
+        bool CanConvert(Type t, Attribute[] metaData);
         object Convert(object instance, Type type);
     }
 }

@@ -1,0 +1,13 @@
+# This file demonstrates how use dictionaries in your configuration
+
+[User1]
+Id = 11111
+Email = "user1@mail.com"
+
+[User2]
+Id = 22222
+Email = "user2@mail.com"
+
+[User3]
+Id = 3333
+Email = "user3@mail.com"

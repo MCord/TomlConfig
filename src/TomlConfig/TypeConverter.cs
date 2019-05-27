@@ -14,7 +14,7 @@ namespace TomlConfiguration
                 this.conversion = conversion;
             }
 
-            public bool CanConvert(Type t, PropertyInfo info)
+            public bool CanConvert(Type t, Attribute[] _)
             {
                 return t == typeof(T);
             }

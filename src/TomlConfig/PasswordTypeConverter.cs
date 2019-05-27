@@ -1,6 +1,7 @@
 namespace TomlConfiguration
 {
     using System;
+    using System.Linq;
     using System.Reflection;
 
     public class PasswordTypeConverter : ITypeConverter
@@ -12,9 +13,9 @@ namespace TomlConfiguration
             this.keeper = keeper;
         }
 
-        public bool CanConvert(Type t, PropertyInfo info)
+        public bool CanConvert(Type t, Attribute[] metaData)
         {
-            return info?.GetCustomAttribute<SecretAttribute>() != null;
+            return (metaData?.Cast<SecretAttribute>().Any()).GetValueOrDefault();
         }
 
         public object Convert(object instance, Type type)

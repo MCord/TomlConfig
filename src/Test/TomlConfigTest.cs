@@ -181,18 +181,29 @@ namespace Test
             var total = doc.GetAllKeys().Sum(x => int.Parse(x.Value.ToString()));
             Check.That(total).IsEqualTo(6);
         }
-//
-//        [Fact]
-//        public void ShouldDeserializeToDynamic()
-//        {
-//            var instance = TomlConfig
-//                .FromString("MyPassword = \"\"")
-//                .WithMasterKey(Security.GenerateKeyAsString())
-//                .Read<dynamic>();
-//
-//            Check.That(instance.MyPassword)
-//                .IsEmpty();
-//        }
+
+
+        public class UserConfig
+        {
+            public int Id { get; set; }
+            public string Email { get; set; }
+            public Dictionary<string, Data> Info { get; set; }
+
+            public class Data
+            {
+                public string Value { get; set; }
+            }    
+        }
+
+        [Fact]
+        public void ShouldParseDictionaries()
+        {
+            var config = TomlConfig.FromFile("files/my-application/dictionary.toml")
+                .Read<Dictionary<string,UserConfig>>();
+
+            Check.That(config.Keys)
+                .IsEquivalentTo(new [] {"User1", "User2", "User3"});
+        }
 
         [Fact]
         public void ShouldInheritUsingDirective()
