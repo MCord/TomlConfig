@@ -231,6 +231,11 @@
                 }
             }
 
+            if (t.IsEnum && value is string enumString)
+            {
+                return Enum.Parse(t, enumString);
+            }
+
             return Convert.ChangeType(value, t);
         }
 
@@ -273,4 +278,5 @@
                 "Please use an Array or a generic List<T>.");
         }
     }
+    
 }

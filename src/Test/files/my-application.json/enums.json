@@ -1,0 +1,12 @@
+{
+  "FirstDayOfTheWeek": "Monday",
+  "CloseDays": [
+    "Saturday",
+    "Sunday"
+  ],
+  
+  "Plan": {
+    "Monday": {"Manager" : "Jesse"},
+    "Friday": {"Manager" : "Jesse"}
+  }
+}

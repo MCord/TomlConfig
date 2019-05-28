@@ -13,7 +13,7 @@ namespace System
         /// <returns></returns>
         public static object Clone(object source, Type targetType)
         {
-            if (source == null)
+            if (source == null || !source.GetType().IsAssignableFrom(targetType))
             {
                 return Activator.CreateInstance(targetType);
             }

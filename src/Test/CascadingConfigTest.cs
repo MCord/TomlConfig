@@ -1,8 +1,10 @@
 namespace Test
 {
+    using System;
     using System.Collections.Generic;
     using System.Linq;
     using JetBrains.Annotations;
+    using Newtonsoft.Json;
     using NFluent;
     using TomlConfiguration;
     using Xunit;

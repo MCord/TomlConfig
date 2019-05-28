@@ -1,0 +1,17 @@
+# This file demonstrates the user of Enums as Key or values inside toml files. Please note that TOML does not 
+# support Enums natively and consider them to be string values. TomlConfig will however convert these strings
+# to Enum values at runtime when needed.
+
+# The json equivalent of this TOML file can be founnd in
+# ../my-application.json/enums.json
+
+FirstDayOfTheWeek = "Monday"
+CloseDays = ["Saturday", "Sunday"]
+
+# You can also use Enums as Keys in dictionaries. 
+
+[Plan]
+    [Plan.Monday]
+        Manager = "Jesse"
+     [Plan.Friday]
+        Manager = "Jesse"

@@ -162,5 +162,30 @@ namespace Test
 
             TestTools.AssertEqual(expected, config);
         }
+        
+        class StoreConfig
+        {
+            public DayOfWeek FirstDayOfTheWeek { get; set; }
+            public DayOfWeek[] CloseDays { get; set; }
+            
+            public Dictionary<DayOfWeek, PlanDetail> Plan { get; set; }
+
+            public class PlanDetail
+            {
+                public string Manager { get; set; }
+            }
+        }
+
+        [Fact]
+        public void ShouldReadEnums()
+        {
+            var file = "./files/my-application/enums.toml";
+            var instance = TomlConfig
+                .FromFile(file)
+                .Read<StoreConfig>();
+
+            CompareToExpectedResult(instance, file);
+        }
+        
     }
 }
