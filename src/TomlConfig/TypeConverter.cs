@@ -19,7 +19,7 @@ namespace TomlConfiguration
                 return t == typeof(T);
             }
 
-            public object Convert(object instance, Type type)
+            public object Convert(object instance, Type type, object parent)
             {
                 return conversion(type, instance);
             }

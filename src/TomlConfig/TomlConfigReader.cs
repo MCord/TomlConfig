@@ -44,14 +44,7 @@
             var tomlTable = Toml.Parse(new StreamReader(data).ReadToEnd());
             var parent = GetInheritInstanceFromDirective(type, tomlTable, refPath);
 
-            var ancestors = new Stack<object>();
-
-            if (parent != null)
-            {
-                ancestors.Push(parent);
-            }
-
-            return ConvertTable(type, tomlTable.ToModel(), ancestors, Array.Empty<string>());
+            return ConvertTable(type, tomlTable.ToModel(), parent);
         }
 
         IEnumerable<SyntaxTrivia> GetFileTrivia(DocumentSyntax doc)
@@ -86,7 +79,7 @@
                 throw new TomlConfigurationException("Only one include directive is allowed in config.");
             }
 
-            if (include?.Length == 1)
+            if (include.Length == 1)
             {
                 var basePath = Path.GetDirectoryName(refPath) ?? ".";
                 var parentPath = Path.Combine(basePath, include[0]);
@@ -120,14 +113,7 @@
         public object ReadWithDefault(Type type, Stream data, object @default)
         {
             var tomlTable = Toml.Parse(new StreamReader(data).ReadToEnd());
-            var ancestors = new Stack<object>();
-
-            if (@default != null)
-            {
-                ancestors.Push(@default);
-            }
-
-            return ConvertTable(type, tomlTable.ToModel(), ancestors, Array.Empty<string>());
+            return ConvertTable(type, tomlTable.ToModel(), @default);
         }
 
         /// <summary>
@@ -146,58 +132,30 @@
             return (T) ReadWithDefault(typeof(T), data, @default);
         }
 
-        private object ConvertTable(Type type, TomlTable tomlTable, Stack<object> ancestors, string[] path)
+        private object ConvertTable(Type type, TomlTable tomlTable, object parent)
         {
-            var instance = Activator.CreateInstance(type);
+            var instance = Cloner.Clone(parent, type);
 
-            var isNewNestingLevel = !ancestors.Any() || ancestors.Last().GetType().IsAssignableFrom(type);
-
-            if (isNewNestingLevel)
+            if (type.IsGenericDictionary())
             {
-                ancestors.Push(instance);
-                path = Array.Empty<string>();
-            }
-
-            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Dictionary<,>))
-            {
-                ConvertDictionary(type, tomlTable, ancestors, path, instance);
-                return instance;
+                return ConvertDictionary(type, tomlTable, parent, instance);
             }
             
-            var remainingProperties = ConvertComplexObject(type, tomlTable, ancestors, path, instance);
-            
-            if (remainingProperties.Any())
-            {
-                SetUnspecifiedPropertiesFromAncestors(ancestors, remainingProperties, instance, path);
-            }
-            
-            if (isNewNestingLevel)
-            {
-                ancestors.Pop();
-            }
-
-            return instance;
+            return ConvertComplexObject(type, tomlTable, instance);
         }
 
-        private List<PropertyInfo> ConvertComplexObject(Type type, TomlTable tomlTable, Stack<object> ancestors, string[] path, object instance)
+        private object ConvertComplexObject(Type type, TomlTable tomlTable, object instance)
         {
-            var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance).ToList();
-
             foreach (var key in tomlTable.Keys)
             {
-                var match = properties.FirstOrDefault(x => x.Name == key) ??
+                var match = type.GetProperty(key )??
                             throw new TomlConfigurationException(
                                 $"No public instance property named '{key}' is found on '{type.FullName}'");
-
-                properties.Remove(match);
-                
                 try
                 {
+                    var localParent = GetLocalParent(instance, match);
                     var convertedValue = ConvertToType(match.PropertyType,
-                        tomlTable[key],
-                        match.GetCustomAttributes().ToArray(),
-                        ancestors,
-                        path.Append(key).ToArray());
+                        tomlTable[key], localParent, match.GetCustomAttributes().ToArray());
 
                     match.SetValue(instance, convertedValue);
                 }
@@ -209,10 +167,22 @@
                 }
             }
 
-            return properties;
+            return instance;
         }
 
-        private void ConvertDictionary(Type type, TomlTable tomlTable, Stack<object> ancestors, string[] path, object instance)
+        private static object GetLocalParent(object instance, PropertyInfo match)
+        {
+            if (match.PropertyType.IsArray 
+                || match.PropertyType.IsGenericDictionary()
+                || match.PropertyType.IsGenericList())
+            {
+                return instance;
+            }
+
+            return match.GetValue(instance);
+        }
+
+        private object ConvertDictionary(Type type, TomlTable tomlTable, object parent, object instance)
         {
             var keyType = type.GenericTypeArguments[0];
             var valueType = type.GenericTypeArguments[1];
@@ -220,9 +190,9 @@
             {
                 try
                 {
-                    var convertedKey = ConvertToType(keyType, key, Array.Empty<Attribute>(), ancestors, path);
-                    var convertedValue = ConvertToType(valueType, tomlTable[key], Array.Empty<Attribute>(), ancestors, path);
-                    type.GetMethod("Add").Invoke(instance, new[] {convertedKey, convertedValue});
+                    var convertedKey = ConvertToType(keyType, key, parent, Array.Empty<Attribute>());
+                    var convertedValue = ConvertToType(valueType, tomlTable[key], parent, Array.Empty<Attribute>());
+                    type.GetMethod("Add")?.Invoke(instance, new[] {convertedKey, convertedValue});
                 }
                 catch (Exception ex)
                 {
@@ -230,58 +200,43 @@
                         $"Unable to convert dictionary element with key  {key} to dictionary", ex);
                 }
             }
+
+            return instance;
         }
 
-        private static void SetUnspecifiedPropertiesFromAncestors(Stack<object> ancestors,
-            List<PropertyInfo> properties, object instance, string[] path)
-        {
-            foreach (var unspecifiedProperty in properties)
-            {
-                var matchingValue = ancestors
-                    .Select(a=> a.GetPropertyValueByName(path.Append(unspecifiedProperty.Name).ToArray()))
-                    .FirstOrDefault(v => v!=null);
-                if (matchingValue != null)
-                {
-                    unspecifiedProperty.SetValue(instance, matchingValue);
-                }
-            }
-        }
-
-        private object ConvertToType(Type targetType, object value, Attribute[] metadata, Stack<object> ancestors, string [] path)
+        private object ConvertToType(Type targetType, object value, object parent, Attribute[] metadata)
         {
             switch (value)
             {
                 case TomlValue v:
-                    return Convert(v.ValueAsObject, targetType, metadata);
+                    return ConvertValue(v.ValueAsObject, targetType, parent, metadata);
                 case TomlArray array:
-                    return ConvertValueArray(array.GetTomlEnumerator(), targetType, ancestors, path);
+                    return ConvertArray(array.GetTomlEnumerator(), targetType, parent);
                 case TomlTableArray tableArray:
-                    return ConvertValueArray(tableArray, targetType, ancestors, path);
+                    return ConvertArray(tableArray, targetType, parent);
                 case TomlTable table:
-                    var convertToType = ConvertTable(targetType, table, ancestors, path);
-                    return convertToType;
+                    return ConvertTable(targetType, table, parent);
                 default:
-                    return Convert(value, targetType, metadata);
+                    return ConvertValue(value, targetType, parent, metadata);
             }
         }
 
-        private object Convert(object value, Type t, Attribute[] metadata)
+        private object ConvertValue(object value, Type t, object parent, Attribute[] metadata)
         {
             foreach (var cnv in settings.CustomTypeConverters)
             {
-                if (cnv.CanConvert(t, metadata))
+                if (cnv.CanConvert(t, metadata ?? Array.Empty<Attribute>()))
                 {
-                    return cnv.Convert(value, t);
+                    return cnv.Convert(value, t, parent);
                 }
             }
 
-            return System.Convert.ChangeType(value, t);
+            return Convert.ChangeType(value, t);
         }
 
-        private object ConvertValueArray(IEnumerable<TomlObject> items, Type targetType, Stack<object> ancestors, string[] path)
+        private object ConvertArray(IEnumerable<TomlObject> items, Type targetType, object parent)
         {
             if (targetType.IsArray)
-
             {
                 var elementType = targetType.GetElementType();
 
@@ -293,20 +248,19 @@
                                                          " because it's not an array.");
                 }
 
-                var converted = items
-                    .Select((x, i) => ConvertToType(elementType, x, null, ancestors, path.Append(i.ToString()).ToArray())).ToArray();
+                var converted = items.Select((x, i) => ConvertToType(elementType, x, parent, null)).ToArray();
                 var result = Array.CreateInstance(elementType, converted.Length);
                 converted.CopyTo(result, 0);
                 return result;
             }
 
-            if (targetType.IsGenericType && targetType.GetGenericTypeDefinition() == typeof(List<>))
+            if (targetType.IsGenericList())
             {
                 var result = (IList) Activator.CreateInstance(targetType);
                 var genericArgument = targetType.GetGenericArguments()[0];
 
                 foreach (var converted in items.Select((x,i) => 
-                    ConvertToType(genericArgument, x, null, ancestors, path.Append(i.ToString()).ToArray())))
+                    ConvertToType(genericArgument, x, parent, null)))
                 {
                     result.Add(converted);
                 }
@@ -316,7 +270,7 @@
 
             throw new TomlConfigurationException(
                 $"Conversion from toml array to {targetType.FullName} is not supported. " +
-                $"Please use an array or a generic List.");
+                "Please use an Array or a generic List<T>.");
         }
     }
 }

@@ -18,7 +18,7 @@ namespace TomlConfiguration
             return (metaData?.Cast<SecretAttribute>().Any()).GetValueOrDefault();
         }
 
-        public object Convert(object instance, Type type)
+        public object Convert(object instance, Type type, object parent)
         {
             if (instance == null || string.IsNullOrWhiteSpace(instance.ToString()))
             {

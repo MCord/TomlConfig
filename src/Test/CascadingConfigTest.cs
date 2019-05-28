@@ -27,6 +27,7 @@ namespace Test
             [UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
             public class UserConfig
             {
+                public string CopyRight { get; set; }
                 public string Name { get; set; }
                 public string[] Rights { get; set; }
             }

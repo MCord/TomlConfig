@@ -5,6 +5,6 @@ namespace TomlConfiguration
     public interface ITypeConverter
     {
         bool CanConvert(Type t, Attribute[] metaData);
-        object Convert(object instance, Type type);
+        object Convert(object instance, Type type, object parent);
     }
 }
