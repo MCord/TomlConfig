@@ -28,7 +28,7 @@ namespace TomlConfiguration
         public static TomlConfigSettings FromFile(string filePath)
         {
             var tomlConfigSettings = TomlConfigSettings.Default;
-            tomlConfigSettings.Data = new NamedStream(filePath, File.Open(filePath, FileMode.Open));
+            tomlConfigSettings.Data = new NamedStream(filePath, File.OpenRead(filePath));
             return tomlConfigSettings;
         }
 
